@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Wildman Pitch Tracker</title>
+  </head>
+  <body>
+    <div id="splash-screen" class="full-screen-overlay">
+      <div class="splash-content">
+        <h1 class="wildman-logo">WILDMAN</h1>
+        <p class="tracker-subtext">PITCH TRACKER</p>
+        <div class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="home-screen" class="full-screen-overlay" style="display: none">
+      <div class="main-menu">
+        <h1 class="wildman-logo">WILDMAN</h1>
+        <div class="menu-options">
+          <button class="btn-menu" onclick="showSetupScreen()">
+            ⚾ NEW GAME
+          </button>
+          <button class="btn-menu" onclick="openStats()">📊 VIEW STATS</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="setup-screen" class="full-screen-overlay" style="display: none">
+      <div class="setup-card">
+        <h2 class="setup-title">GAME SETUP</h2>
+        <div class="setup-group">
+          <label>AWAY TEAM</label>
+          <input
+            type="text"
+            id="away-team-input"
+            list="team-history"
+            placeholder="Visitor Name"
+          />
+        </div>
+        <div class="setup-group">
+          <label>HOME TEAM</label>
+          <input
+            type="text"
+            id="home-team-input"
+            list="team-history"
+            placeholder="Home Name"
+            oninput="checkLocationMemory(this.value)"
+          />
+        </div>
+        <div class="setup-group">
+          <label>LOCATION</label>
+          <input type="text" id="location-input" placeholder="Field Name" />
+        </div>
+        <datalist id="team-history"></datalist>
+        <button class="btn-start-game" onclick="confirmSetup()">
+          START TRACKER
+        </button>
+        <button class="btn-secondary" onclick="showHomeScreen()">BACK</button>
+      </div>
+    </div>
+
+    <div id="app">
+      <header class="app-header">
+        <div class="header-side header-left">
+          <h2 id="current-pitcher" onclick="promptPitcherName()">
+            Select Pitcher
+          </h2>
+          <div class="game-status-row">
+            <span
+              onclick="adjustInning(1)"
+              style="cursor: pointer; padding: 5px"
+            >
+              INN <b id="display-inning">1</b>
+            </span>
+            <span style="margin: 0 5px; opacity: 0.3">|</span>
+            <span onclick="adjustOuts(1)" style="cursor: pointer; padding: 5px">
+              <b id="display-outs">0</b> OUTS
+            </span>
+          </div>
+        </div>
+
+        <div class="header-center">
+          <div class="score-box" onclick="adjustScore('away', 1)">
+            <label id="label-away">AWAY</label>
+            <span id="score-away">0</span>
+          </div>
+          <div class="score-divider">VS</div>
+          <div class="score-box" onclick="adjustScore('home', 1)">
+            <label id="label-home">HOME</label>
+            <span id="score-home">0</span>
+          </div>
+        </div>
+
+        <div class="header-side header-right">
+          <div class="count" id="main-count">0 - 0</div>
+          <div class="total-pitches">P: <span id="pitch-total">0</span></div>
+        </div>
+      </header>
+
+      <div class="timer-bar">
+        <span id="timer-display">00:00:00</span>
+        <div class="timer-btns">
+          <button id="timer-toggle-btn" onclick="toggleTimer()">START</button>
+          <button onclick="resetTimer()">RESET</button>
+        </div>
+      </div>
+
+      <main class="main-layout">
+        <section class="zone-container">
+          <div id="strike-zone" class="strike-zone">
+            <div class="inner-plate"></div>
+          </div>
+        </section>
+
+        <section class="controls">
+          <div class="pitch-type-grid">
+            <button
+              class="type-chip active"
+              id="type-FB"
+              onclick="setPitchType('FB')"
+            >
+              FASTBALL
+            </button>
+            <button class="type-chip" id="type-BR" onclick="setPitchType('BR')">
+              BREAKING
+            </button>
+            <button class="type-chip" id="type-CH" onclick="setPitchType('CH')">
+              CHANGEUP
+            </button>
+          </div>
+
+          <div class="velocity-control">
+            <div class="velo-header">
+              <label>VELOCITY</label>
+              <div class="velo-display">
+                <span id="velo-number">75</span> <small>MPH</small>
+              </div>
+            </div>
+            <div class="slider-row">
+              <button class="btn-step" onclick="stepVelo(-1)">−</button>
+              <input
+                type="range"
+                id="pitch-speed"
+                min="40"
+                max="105"
+                value="75"
+                oninput="updateVeloDisplay(this.value)"
+              />
+              <button class="btn-step" onclick="stepVelo(1)">+</button>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button class="btn btn-ball" onclick="recordPitch('Ball')">
+              BALL
+            </button>
+            <div class="strike-wrap">
+              <button
+                id="btn-strike-main"
+                class="btn btn-strike"
+                onclick="showStrikeSplit()"
+              >
+                STRIKE
+              </button>
+              <div id="strike-split" style="display: none; gap: 5px">
+                <button
+                  class="btn btn-strike-sub"
+                  onclick="recordPitch('Strike Looking')"
+                >
+                  LOOK
+                </button>
+                <button
+                  class="btn btn-strike-sub"
+                  onclick="recordPitch('Strike Swinging')"
+                >
+                  SWING
+                </button>
+              </div>
+            </div>
+            <button class="btn btn-foul" onclick="recordPitch('Foul')">
+              FOUL
+            </button>
+            <button class="btn btn-inplay" onclick="recordPitch('In-Play')">
+              IN PLAY
+            </button>
+            <button class="btn btn-hbp" onclick="recordPitch('HBP')">
+              HBP
+            </button>
+            <button class="btn btn-undo" onclick="undoLastPitch()">
+              UNDO LAST PITCH
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav">
+        <button onclick="switchPitcher()">Swap Pitcher</button>
+        <button onclick="openStats()">Stats</button>
+        <button onclick="endGame()">End Game</button>
+      </nav>
+    </div>
+
+    <div id="pitcher-modal" class="modal">
+      <div class="modal-content">
+        <h3>ADD NEW PITCHER</h3>
+        <input
+          type="text"
+          id="new-p-first"
+          placeholder="First Name"
+          class="setup-group-input"
+        />
+        <input
+          type="text"
+          id="new-p-last"
+          placeholder="Last Name"
+          class="setup-group-input"
+        />
+        <div class="hand-picker">
+          <button
+            class="btn-hand active"
+            id="btn-right"
+            onclick="selectHand('R')"
+          >
+            RIGHTY
+          </button>
+          <button class="btn-hand" id="btn-left" onclick="selectHand('L')">
+            LEFTY
+          </button>
+        </div>
+        <button class="btn-start-game" onclick="saveNewPitcher()">
+          SAVE PITCHER
+        </button>
+        <button class="btn-secondary" onclick="closePitcherModal()">
+          CANCEL
+        </button>
+      </div>
+    </div>
+
+    <div id="hit-overlay" class="modal">
+      <div class="hit-picker">
+        <h3>WHERE WAS THE HIT?</h3>
+        <div class="hit-buttons">
+          <button class="hit-btn btn-left" onclick="submitHit('Left')">
+            LEFT
+          </button>
+          <button class="hit-btn btn-center" onclick="submitHit('Center')">
+            CENTER
+          </button>
+          <button class="hit-btn btn-right" onclick="submitHit('Right')">
+            RIGHT
+          </button>
+        </div>
+        <button
+          onclick="
+            document.getElementById('hit-overlay').style.display = 'none'
+          "
+          class="text-link-cancel"
+        >
+          Nevermind, cancel
+        </button>
+      </div>
+    </div>
+
+    <div id="stats-modal" class="modal">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2>Analytics</h2>
+          <button onclick="closeStats()" class="close-btn">X</button>
+        </header>
+        <div id="stats-display" class="stats-grid"></div>
+        <button class="btn-share" onclick="exportStatCard()">
+          Share Stat Sheet
+        </button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

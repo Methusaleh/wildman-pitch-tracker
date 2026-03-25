@@ -1,0 +1,21 @@
+{
+  "short_name": "PitchTracker",
+  "name": "Pitch Tracker Final",
+  "display": "standalone",
+  "orientation": "any",
+  "start_url": "./index.html",
+  "background_color": "#121212",
+  "theme_color": "#1a73e8",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/1a73e8/ffffff?text=PT",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://via.placeholder.com/512/1a73e8/ffffff?text=Pitch+Tracker",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

@@ -1,0 +1,609 @@
+:root {
+  --bg-color: #0a0a0a;
+  --card-bg: #1e1e1e;
+  --text: #ffffff;
+  --ball: #f44336;
+  --strike: #4caf50;
+  --foul: #9c27b0;
+  --accent: #2196f3;
+}
+
+* {
+  box-sizing: border-box;
+}
+body,
+html {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.full-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.wildman-logo {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--accent);
+  margin: 0;
+}
+.tracker-subtext {
+  letter-spacing: 10px;
+  color: #555;
+  margin-top: -5px;
+  font-size: 0.9rem;
+}
+.loading-bar-container {
+  width: 180px;
+  height: 4px;
+  background: #222;
+  margin-top: 25px;
+  border-radius: 2px;
+}
+.loading-bar {
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  animation: loadProgress 2s forwards;
+}
+@keyframes loadProgress {
+  to {
+    width: 100%;
+  }
+}
+
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 30px;
+  width: 280px;
+}
+.btn-menu {
+  padding: 22px;
+  background: var(--card-bg);
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.setup-card {
+  background: var(--card-bg);
+  width: 92%;
+  max-width: 450px;
+  padding: 25px;
+  border-radius: 20px;
+  border: 1px solid #333;
+  text-align: center;
+}
+.setup-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+.setup-group label {
+  display: block;
+  font-size: 0.7rem;
+  color: #888;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+.setup-group input,
+.setup-group-input {
+  width: 100%;
+  padding: 14px;
+  background: #121212;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 10px;
+}
+
+.pitch-type-grid {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.type-chip {
+  flex: 1;
+  padding: 14px 2px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 10px;
+  color: #666;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+#type-FB.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(33, 150, 243, 0.1);
+}
+#type-BR.active {
+  border-color: #e91e63;
+  color: #e91e63;
+  background: rgba(233, 30, 99, 0.1);
+}
+#type-CH.active {
+  border-color: #ff9800;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.velocity-control {
+  background: #1a1a1a;
+  padding: 10px 15px;
+  border-radius: 15px;
+  border: 1px solid #333;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.velo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.velo-display {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text);
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-step {
+  width: 42px;
+  height: 42px;
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  background: #333;
+  height: 6px;
+  border-radius: 5px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding-top: env(safe-area-inset-top);
+}
+/* --- Header Layout --- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 10px 15px 15px 15px;
+  background: var(--card-bg);
+  border-bottom: 1px solid #333;
+  min-height: 100px;
+}
+
+.header-side {
+  flex: 1;
+}
+.header-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* The Center Scoreboard */
+.header-center {
+  flex: 1.5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 15px;
+  padding-bottom: 5px;
+}
+
+.score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.score-box label {
+  font-size: 0.65rem;
+  color: #666;
+  font-weight: 900;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  max-width: 80px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.score-box span {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.score-divider {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #333;
+  padding-bottom: 5px;
+}
+
+/* --- New: Timer Bar Styling --- */
+.timer-bar {
+  background: #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  border-bottom: 1px solid #222;
+}
+
+#timer-display {
+  font-family: monospace;
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.timer-btns button {
+  background: #222;
+  border: 1px solid #444;
+  color: #888;
+  font-size: 0.7rem;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-left: 5px;
+  font-weight: bold;
+}
+
+.pitcher-info h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+.game-status-row {
+  font-size: 1rem;
+  color: #888;
+  margin-top: 5px;
+  font-weight: bold;
+}
+
+.game-status-row b {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+/* --- Scoreboard Right --- */
+.scoreboard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.count {
+  font-size: 2.8rem; /* Huge Count for easy viewing */
+  font-weight: 900;
+  line-height: 0.9;
+  color: var(--text);
+  letter-spacing: -2px;
+}
+
+.total-pitches {
+  font-size: 1rem;
+  color: #666;
+  margin-top: 5px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#pitch-total {
+  color: var(--accent);
+}
+.main-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  overflow: hidden;
+}
+@media (orientation: landscape) {
+  /* 1. Side-by-side with 50/50 split */
+  .main-layout {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center; /* Centers both items vertically */
+    gap: 40px; /* Big gap so it doesn't feel cramped */
+    padding: 10px 40px;
+    overflow: hidden; /* Prevents the footer overlap */
+  }
+
+  /* 2. Fix the Zone's shape */
+  .strike-zone {
+    flex: 1; /* Takes half the width */
+    height: 60vh; /* Limits height so it doesn't push off screen */
+    width: auto;
+    max-width: 400px;
+    aspect-ratio: 4/5; /* This FORCES it to be the right baseball shape */
+    margin: 0;
+  }
+
+  /* 3. Fix the Controls Block */
+  .controls {
+    flex: 1; /* Takes the other half of the width */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 450px;
+    height: auto;
+  }
+
+  /* 4. Shrink buttons slightly for landscape so they don't hide under the footer */
+  .btn {
+    padding: 12px 5px; /* Thinner buttons in landscape */
+    font-size: 0.85rem;
+  }
+
+  .velocity-control {
+    padding: 8px;
+    margin-bottom: 5px;
+  }
+}
+.strike-zone {
+  position: relative;
+  background: #222;
+  border: 2px solid #444;
+  border-radius: 10px;
+  aspect-ratio: 4/5;
+  height: 45vh;
+}
+.inner-plate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 70%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.strike-wrap {
+  grid-column: span 1;
+  position: relative;
+}
+#strike-split {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+}
+.btn {
+  width: 100%;
+  padding: 18px 5px;
+  border-radius: 12px;
+  border: none;
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.btn-ball {
+  background: var(--ball);
+}
+.btn-strike {
+  background: var(--strike);
+}
+.btn-strike-sub {
+  background: #2e7d32;
+  font-size: 0.75rem;
+}
+.btn-foul {
+  background: var(--foul);
+}
+.btn-inplay {
+  background: var(--accent);
+}
+.btn-hbp {
+  background: #ff5722;
+  grid-column: span 2;
+  padding: 12px;
+  margin-top: 2px;
+}
+.btn-undo {
+  grid-column: span 2; /* Takes up the full width at the bottom of the grid */
+  background: #333; /* Dark gray */
+  color: #888; /* Dimmed text */
+  border: 1px solid #444;
+  margin-top: 10px;
+  padding: 12px !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-undo:active {
+  background: #ff5252; /* Flashes red when pressed to confirm it worked */
+  color: white;
+}
+
+.ping {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+.temp-ping {
+  background-color: #ffeb3b !important;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 15px #ffeb3b;
+  animation: pulse 1s infinite;
+  z-index: 101;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 6000;
+  align-items: center;
+  justify-content: center;
+}
+.hit-picker {
+  background: var(--card-bg);
+  padding: 25px;
+  border-radius: 20px;
+  width: 92%;
+  max-width: 480px;
+  text-align: center;
+  border: 1px solid #444;
+}
+.hit-btn {
+  flex: 1;
+  padding: 35px 5px;
+  border-radius: 12px;
+  border: none;
+  color: white;
+  font-weight: 900;
+  font-size: 1rem;
+}
+.btn-left {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+.btn-center {
+  background: linear-gradient(135deg, #2196f3, #1565c0);
+}
+.btn-right {
+  background: linear-gradient(135deg, #8bc34a, #4caf50);
+}
+.text-link-cancel {
+  background: none;
+  border: none;
+  color: #ff5252;
+  font-weight: bold;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.btn-start-game {
+  width: 100%;
+  padding: 22px;
+  background: var(--strike);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-top: 15px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.bottom-nav {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: var(--card-bg);
+  border-top: 1px solid #333;
+}
+.bottom-nav button {
+  flex: 1;
+  padding: 14px;
+  background: #333;
+  color: var(--accent);
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: none;
+  color: #666;
+  border: none;
+  padding: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.hand-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.btn-hand {
+  flex: 1;
+  padding: 12px;
+  background: #333;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  color: #888;
+  font-weight: bold;
+}
+.btn-hand.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(33, 150, 243, 0.1);
+}
