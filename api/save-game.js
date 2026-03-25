@@ -1,26 +1,41 @@
 import { neon } from "@neondatabase/serverless";
 
 export default async function handler(req, res) {
-  // Only allow POST requests
+  // 1. Log the Method for debugging
+  console.log("Request Method:", req.method);
+
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(200).json({
+      message: "Wildman API is online. Send a POST request to save data.",
+    });
+  }
+
+  // 2. Safety check for the body
+  if (!req.body || !req.body.gameData) {
+    console.error("Missing body or gameData");
+    return res.status(400).json({ error: "No game data received." });
   }
 
   const sql = neon(process.env.DATABASE_URL);
   const { gameData, pitches } = req.body;
 
   try {
-    // 1. Insert the Game Header
+    console.log(
+      "Attempting database insert for pitcher:",
+      gameData.pitcherName,
+    );
+
+    // 3. The Database Transaction
     const gameResult = await sql`
             INSERT INTO games (pitcher_name, home_team, away_team, final_score_home, final_score_away, game_duration_seconds)
-            VALUES (${gameData.pitcherName}, ${gameData.homeTeam}, ${gameData.awayTeam}, ${gameData.homeScore}, ${gameData.awayScore}, ${gameData.timerSeconds})
+            VALUES (${gameData.pitcherName || "Unknown"}, ${gameData.homeTeam || ""}, ${gameData.awayTeam || ""}, ${gameData.homeScore || 0}, ${gameData.awayScore || 0}, ${gameData.timerSeconds || 0})
             RETURNING id;
         `;
 
     const gameId = gameResult[0].id;
 
-    // 2. Insert all Pitches
     if (pitches && pitches.length > 0) {
+      console.log(`Saving ${pitches.length} pitches...`);
       for (const p of pitches) {
         await sql`
                     INSERT INTO pitches (game_id, pitch_type, velocity, result, location_x, location_y, hit_direction)
@@ -29,9 +44,9 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ success: true, gameId });
+    return res.status(200).json({ success: true, gameId: gameId });
   } catch (error) {
-    console.error("Database Error:", error);
+    console.error("DB_CRASH:", error.message);
     return res.status(500).json({ error: error.message });
   }
 }
