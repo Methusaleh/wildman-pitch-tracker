@@ -387,48 +387,55 @@ function loadGame() {
   }
 }
 async function openStats() {
-  document.getElementById("stats-modal").style.display = "flex";
+  const modal = document.getElementById("stats-modal");
   const display = document.getElementById("stats-display");
+
+  modal.style.display = "flex";
   display.innerHTML =
-    "<p style='text-align:center; padding:20px;'>Crunching Season Data...</p>";
+    "<p style='text-align:center; width:100%; color:#888;'>Loading Season Data...</p>";
 
   try {
+    // This talks to the live Neon DB
     const response = await fetch("/api/get-stats.js");
     const data = await response.json();
 
     if (data.games && data.pitches) {
       processAndRenderStats(data.games, data.pitches);
+    } else {
+      display.innerHTML =
+        "<p style='text-align:center; width:100%;'>No games found in the cloud.</p>";
     }
   } catch (err) {
-    display.innerHTML = "<p style='color:red;'>Error loading stats.</p>";
+    console.error("Stats Error:", err);
+    display.innerHTML =
+      "<p style='text-align:center; width:100%; color:red;'>Database Connection Error</p>";
   }
 }
 
 function processAndRenderStats(games, pitches) {
   const display = document.getElementById("stats-display");
 
-  // 1. Season High-Level Math
-  const totalPitches = pitches.length;
+  // 1. Calculate Season Totals
+  const totalP = pitches.length;
   const strikes = pitches.filter(
-    (p) => p.result.includes("Strike") || p.result === "Foul",
+    (p) => p.result && (p.result.includes("Strike") || p.result === "Foul"),
   ).length;
-  const strikePct =
-    totalPitches > 0 ? ((strikes / totalPitches) * 100).toFixed(1) : 0;
-  const maxVelo =
-    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity)) : 0;
+  const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
+  const maxV =
+    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity || 0)) : 0;
 
-  // 2. Render Hero Cards
+  // 2. Build the HTML (Using your existing stat-card classes)
   let html = `
-    <div class="stat-card"><label>Total Pitches</label><span>${totalPitches}</span></div>
-    <div class="stat-card"><label>Season Max</label><span>${maxVelo} <small>MPH</small></span></div>
-    <div class="stat-card"><label>Strike %</label><span>${strikePct}%</span></div>
-    <div class="stat-card"><label>Games</label><span>${games.length}</span></div>
+    <div class="stat-card"><label>Total Pitches</label><span>${totalP}</span></div>
+    <div class="stat-card"><label>Season Max</label><span>${maxV} <small>MPH</small></span></div>
+    <div class="stat-card"><label>Strike %</label><span>${sPct}%</span></div>
+    <div class="stat-card"><label>Total Games</label><span>${games.length}</span></div>
     
-    <div class="game-log-container">
-      <h3 style="font-size: 0.8rem; color: #555; margin-bottom: 10px;">RECENT GAME REPORTS</h3>
+    <div style="grid-column: 1/-1; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+      <h3 style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">RECENT GAMES</h3>
   `;
 
-  // 3. Render Game Rows & Report Logic
+  // 3. Add the individual game rows
   games.forEach((game) => {
     const gamePitches = pitches.filter((p) => p.game_id === game.id);
     const date = new Date(game.played_at).toLocaleDateString("en-US", {
@@ -436,36 +443,13 @@ function processAndRenderStats(games, pitches) {
       day: "numeric",
     });
 
-    // Calculate Strikeouts for this game
-    let strikeouts = 0;
-    let currentStrikes = 0;
-    gamePitches.forEach((p) => {
-      if (p.result === "Ball" || p.result === "In-Play" || p.result === "HBP") {
-        currentStrikes = 0;
-      } else if (p.result.includes("Strike") || p.result === "Foul") {
-        if (currentStrikes === 2 && p.result !== "Foul") {
-          strikeouts++;
-          currentStrikes = 0;
-        } else if (p.result !== "Foul" || currentStrikes < 2) {
-          currentStrikes++;
-        }
-      }
-    });
-
-    const reportText = generateConciseReport(
-      game,
-      gamePitches,
-      strikeouts,
-      date,
-    );
-
     html += `
-      <div class="game-row">
+      <div class="game-row" style="display:flex; justify-content:space-between; align-items:center; background:#1a1a1a; padding:10px; margin-bottom:5px; border-radius:8px;">
         <div class="game-info">
-          <h4>${game.away_team} @ ${game.home_team}</h4>
-          <p>${date} • ${game.pitcher_name} • ${strikeouts} K</p>
+          <h4 style="margin:0; font-size:0.9rem;">${game.away_team} @ ${game.home_team}</h4>
+          <p style="margin:0; font-size:0.7rem; color:#555;">${date} • ${game.pitcher_name}</p>
         </div>
-        <button class="btn-report-copy" onclick="copyReport('${btoa(reportText)}')">TEXT REPORT</button>
+        <button onclick="alert('Concise report coming in the next step!')" style="background:#333; color:var(--strike); border:none; padding:5px 10px; border-radius:4px; font-size:0.7rem; font-weight:bold;">REPORT</button>
       </div>
     `;
   });
