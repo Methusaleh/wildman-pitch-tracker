@@ -437,38 +437,45 @@ function applyFilters() {
   const selectedP = document.getElementById("filter-pitcher").value;
   const selectedT = document.getElementById("filter-team").value;
   const span = document.getElementById("filter-timespan").value;
+  const selectedDate = document.getElementById("filter-date").value; // "YYYY-MM-DD"
 
   const now = new Date();
 
-  // THE FILTERING ENGINE
   let filteredGames = rawStatsData.games.filter((game) => {
     const gameDate = new Date(game.played_at);
 
-    // 1. Filter by Pitcher
+    // 1. Basic Filters
     const matchP = selectedP === "all" || game.pitcher_name === selectedP;
-
-    // 2. Filter by Team
     const matchT =
       selectedT === "all" ||
       game.home_team === selectedT ||
       game.away_team === selectedT;
 
-    // 3. Filter by Time Span (The Calendar Math)
+    // 2. Advanced Time Logic
     let matchTime = true;
+
     if (span === "month") {
       matchTime =
         gameDate.getMonth() === now.getMonth() &&
         gameDate.getFullYear() === now.getFullYear();
     } else if (span === "week") {
-      const sunday = new Date(now.setDate(now.getDate() - now.getDay()));
+      const sunday = new Date();
+      sunday.setDate(now.getDate() - now.getDay());
       sunday.setHours(0, 0, 0, 0);
       matchTime = gameDate >= sunday;
+    } else if (span === "single" && selectedDate) {
+      // Compare YYYY-MM-DD strings for a perfect match
+      const offsetDate = new Date(
+        gameDate.getTime() - gameDate.getTimezoneOffset() * 60000,
+      )
+        .toISOString()
+        .split("T")[0];
+      matchTime = offsetDate === selectedDate;
     }
 
     return matchP && matchT && matchTime;
   });
 
-  // Send the filtered results to be displayed
   processAndRenderStats(filteredGames, rawStatsData.pitches);
 }
 
@@ -540,6 +547,17 @@ function processAndRenderStats(games, pitches) {
 
   html += `</div>`;
   display.innerHTML = html;
+}
+
+function toggleDateInput(value) {
+  const dateInput = document.getElementById("filter-date");
+  // If user picks "single", show the calendar. Otherwise, hide it.
+  if (value === "single") {
+    dateInput.style.display = "block";
+  } else {
+    dateInput.style.display = "none";
+    applyFilters(); // Re-run stats immediately for Week/Month/All
+  }
 }
 
 function generateConciseReport(game, pitches, kCount, date) {

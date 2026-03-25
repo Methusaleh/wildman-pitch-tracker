@@ -272,21 +272,111 @@
           <button onclick="closeStats()" class="close-btn">X</button>
         </header>
 
-        <div class="filter-section">
-          <select id="filter-pitcher" onchange="updateTeamFilter()">
-            <option>All Pitchers</option>
+        <div
+          class="filter-section"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            margin-bottom: 20px;
+          "
+        >
+          <label
+            style="
+              font-size: 0.7rem;
+              color: #666;
+              font-weight: bold;
+              margin-bottom: -5px;
+            "
+            >PITCHER</label
+          >
+          <select
+            id="filter-pitcher"
+            style="
+              width: 100%;
+              padding: 12px;
+              border-radius: 8px;
+              background: #000;
+              color: white;
+              border: 1px solid #333;
+            "
+          >
+            <option value="all">All Pitchers</option>
           </select>
-          <select id="filter-team">
-            <option>All Teams</option>
+
+          <label
+            style="
+              font-size: 0.7rem;
+              color: #666;
+              font-weight: bold;
+              margin-bottom: -5px;
+            "
+            >TEAM</label
+          >
+          <select
+            id="filter-team"
+            style="
+              width: 100%;
+              padding: 12px;
+              border-radius: 8px;
+              background: #000;
+              color: white;
+              border: 1px solid #333;
+            "
+          >
+            <option value="all">All Teams</option>
           </select>
-          <select id="filter-timespan">
+
+          <label
+            style="
+              font-size: 0.7rem;
+              color: #666;
+              font-weight: bold;
+              margin-bottom: -5px;
+            "
+            >TIME SPAN</label
+          >
+          <select
+            id="filter-timespan"
+            onchange="toggleDateInput(this.value)"
+            style="
+              width: 100%;
+              padding: 12px;
+              border-radius: 8px;
+              background: #000;
+              color: white;
+              border: 1px solid #333;
+            "
+          >
             <option value="all">All-Time</option>
             <option value="month">This Month</option>
-            <option value="week">This Week</option>
-            <option value="custom">Single Game (Date)</option>
+            <option value="week">This Week (Sun-Sat)</option>
+            <option value="single">Single Game (Select Date)</option>
           </select>
-          <button class="btn-start-game" onclick="applyFilters()">
-            VIEW ANALYTICS
+
+          <input
+            type="date"
+            id="filter-date"
+            style="
+              display: none;
+              width: 100%;
+              padding: 12px;
+              border-radius: 8px;
+              background: #000;
+              color: white;
+              border: 1px solid var(--accent);
+            "
+          />
+
+          <button
+            class="btn-start-game"
+            onclick="applyFilters()"
+            style="margin-top: 10px"
+          >
+            UPDATE ANALYTICS
           </button>
         </div>
 
