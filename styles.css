@@ -21,6 +21,7 @@ html {
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .full-screen-overlay {
@@ -563,6 +564,11 @@ input[type="range"]::-webkit-slider-thumb {
   cursor: pointer;
   text-transform: uppercase;
 }
+
+.btn-start-game:active {
+  transform: scale(0.98);
+  background: #45a049; /* Slightly darker green when pressed */
+}
 .bottom-nav {
   display: flex;
   gap: 10px;
@@ -611,9 +617,9 @@ input[type="range"]::-webkit-slider-thumb {
 /* Stats Dashboard Styles */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 12px;
-  padding: 15px;
+  grid-template-columns: 1fr 1fr; /* Two cards per row */
+  gap: 10px;
+  margin-bottom: 30px;
 }
 
 .stat-card {
@@ -639,9 +645,10 @@ input[type="range"]::-webkit-slider-thumb {
   color: var(--accent);
 }
 
-.game-log-container {
-  margin-top: 20px;
-  padding: 0 15px;
+.game-log-container,
+#stats-display > div[style*="grid-column"] {
+  grid-column: span 2;
+  width: 100%;
 }
 
 .game-row {
@@ -673,4 +680,63 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 6px;
   font-size: 0.7rem;
   font-weight: bold;
+}
+
+/* Ensure the modal covers the whole screen */
+#stats-modal.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000; /* Pure black background to hide the app */
+  z-index: 9999;
+  overflow-y: auto; /* Allow scrolling if there are many games */
+  padding: 20px 10px;
+}
+
+/* Make the content box look like a dashboard */
+#stats-modal .modal-content {
+  background: #0a0a0a;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border: none;
+  padding: 0; /* Remove default padding to use our own layout */
+}
+
+/* Header styling */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 20px 0;
+  border-bottom: 1px solid #222;
+  margin-bottom: 20px;
+}
+
+.close-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 50%;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Style the Stats Filter Selects */
+.filter-section select {
+  appearance: none; /* Removes default arrow */
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px !important;
+}
+
+.filter-section select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
 }
