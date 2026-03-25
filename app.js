@@ -422,28 +422,32 @@ async function endGame() {
 
   try {
     console.log("Sending data to Vercel...");
-
-    // 2. We MUST use await here to pause the reload
     const response = await fetch("/api/save-game.js", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
-    const result = await response.json();
-
-    if (response.ok && result.success) {
-      alert("⚾ Game saved to Neon Database!");
-      // 3. ONLY clear data after we know it is safe in the cloud
-      localStorage.removeItem("currentPitchTrackerGame");
-      location.reload();
+    // NEW: Check if the response is actually JSON before parsing
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      const result = await response.json();
+      if (response.ok && result.success) {
+        alert("⚾ Game saved to Neon Database!");
+        localStorage.removeItem("currentPitchTrackerGame");
+        location.reload();
+      } else {
+        alert("Cloud Error: " + (result.error || "Unknown Error"));
+      }
     } else {
-      console.error("Database Error:", result.error);
-      alert("Cloud Save Failed: " + (result.error || "Unknown Error"));
+      // This captures the "A server error..." text and shows it to you
+      const textError = await response.text();
+      console.error("Server sent back text instead of JSON:", textError);
+      alert("Server Error: Check Vercel Logs for the 'A' error.");
     }
   } catch (err) {
     console.error("Network Error:", err);
-    alert("Connection Error. Game was NOT saved to the cloud.");
+    alert("Connection Error. Check Console.");
   }
 }
 function updateTeamDatalist() {
