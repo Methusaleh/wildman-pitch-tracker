@@ -9,15 +9,12 @@ let gameState = {
   outs: 0,
   inning: 1,
   totalPitches: 0,
-  sessionPitches: [],
-  lastTap: null,
-  currentPitchType: "FB",
   homeScore: 0,
   awayScore: 0,
   timerSeconds: 0,
   timerActive: false,
-  sessionPitches: [],
-  activeAtBatPitches: [], // New array to track pitches for the current at-bat
+  sessionPitches: [], // ONLY ONE OF THESE
+  activeAtBatPitches: [],
 };
 
 let selectedHand = "R";
@@ -405,13 +402,48 @@ function renderStatsDisplay() {
   document.getElementById("stats-display").innerHTML =
     `<div class="stat-card"><label>Total</label><span>${total}</span></div><div class="stat-card"><label>Strike %</label><span>${pct}%</span></div>`;
 }
-function endGame() {
-  if (confirm("Save to history?")) {
-    const h = JSON.parse(localStorage.getItem("pitchTrackerHistory")) || [];
-    h.push({ ...gameState, timestamp: Date.now() });
-    localStorage.setItem("pitchTrackerHistory", JSON.stringify(h));
-    localStorage.removeItem("currentPitchTrackerGame");
-    location.reload();
+async function endGame() {
+  if (!confirm("Save this game to the Wildman Database?")) return;
+
+  // 1. Stop the timer and prep data
+  if (gameState.timerActive) toggleTimer();
+
+  const payload = {
+    gameData: {
+      pitcherName: gameState.pitcherName,
+      homeTeam: gameState.homeTeam,
+      awayTeam: gameState.awayTeam,
+      homeScore: gameState.homeScore,
+      awayScore: gameState.awayScore,
+      timerSeconds: gameState.timerSeconds,
+    },
+    pitches: gameState.sessionPitches,
+  };
+
+  try {
+    console.log("Sending data to Vercel...");
+
+    // 2. We MUST use await here to pause the reload
+    const response = await fetch("/api/save-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      alert("⚾ Game saved to Neon Database!");
+      // 3. ONLY clear data after we know it is safe in the cloud
+      localStorage.removeItem("currentPitchTrackerGame");
+      location.reload();
+    } else {
+      console.error("Database Error:", result.error);
+      alert("Cloud Save Failed: " + (result.error || "Unknown Error"));
+    }
+  } catch (err) {
+    console.error("Network Error:", err);
+    alert("Connection Error. Game was NOT saved to the cloud.");
   }
 }
 function updateTeamDatalist() {
