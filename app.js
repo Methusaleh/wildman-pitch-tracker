@@ -386,21 +386,122 @@ function loadGame() {
     });
   }
 }
-function openStats() {
+async function openStats() {
   document.getElementById("stats-modal").style.display = "flex";
-  renderStatsDisplay();
+  const display = document.getElementById("stats-display");
+  display.innerHTML =
+    "<p style='text-align:center; padding:20px;'>Crunching Season Data...</p>";
+
+  try {
+    const response = await fetch("/api/get-stats.js");
+    const data = await response.json();
+
+    if (data.games && data.pitches) {
+      processAndRenderStats(data.games, data.pitches);
+    }
+  } catch (err) {
+    display.innerHTML = "<p style='color:red;'>Error loading stats.</p>";
+  }
 }
+
+function processAndRenderStats(games, pitches) {
+  const display = document.getElementById("stats-display");
+
+  // 1. Season High-Level Math
+  const totalPitches = pitches.length;
+  const strikes = pitches.filter(
+    (p) => p.result.includes("Strike") || p.result === "Foul",
+  ).length;
+  const strikePct =
+    totalPitches > 0 ? ((strikes / totalPitches) * 100).toFixed(1) : 0;
+  const maxVelo =
+    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity)) : 0;
+
+  // 2. Render Hero Cards
+  let html = `
+    <div class="stat-card"><label>Total Pitches</label><span>${totalPitches}</span></div>
+    <div class="stat-card"><label>Season Max</label><span>${maxVelo} <small>MPH</small></span></div>
+    <div class="stat-card"><label>Strike %</label><span>${strikePct}%</span></div>
+    <div class="stat-card"><label>Games</label><span>${games.length}</span></div>
+    
+    <div class="game-log-container">
+      <h3 style="font-size: 0.8rem; color: #555; margin-bottom: 10px;">RECENT GAME REPORTS</h3>
+  `;
+
+  // 3. Render Game Rows & Report Logic
+  games.forEach((game) => {
+    const gamePitches = pitches.filter((p) => p.game_id === game.id);
+    const date = new Date(game.played_at).toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+    });
+
+    // Calculate Strikeouts for this game
+    let strikeouts = 0;
+    let currentStrikes = 0;
+    gamePitches.forEach((p) => {
+      if (p.result === "Ball" || p.result === "In-Play" || p.result === "HBP") {
+        currentStrikes = 0;
+      } else if (p.result.includes("Strike") || p.result === "Foul") {
+        if (currentStrikes === 2 && p.result !== "Foul") {
+          strikeouts++;
+          currentStrikes = 0;
+        } else if (p.result !== "Foul" || currentStrikes < 2) {
+          currentStrikes++;
+        }
+      }
+    });
+
+    const reportText = generateConciseReport(
+      game,
+      gamePitches,
+      strikeouts,
+      date,
+    );
+
+    html += `
+      <div class="game-row">
+        <div class="game-info">
+          <h4>${game.away_team} @ ${game.home_team}</h4>
+          <p>${date} • ${game.pitcher_name} • ${strikeouts} K</p>
+        </div>
+        <button class="btn-report-copy" onclick="copyReport('${btoa(reportText)}')">TEXT REPORT</button>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  display.innerHTML = html;
+}
+
+function generateConciseReport(game, pitches, kCount, date) {
+  const total = pitches.length;
+  const strikes = pitches.filter(
+    (p) => p.result.includes("Strike") || p.result === "Foul",
+  ).length;
+  const sPct = total > 0 ? Math.round((strikes / total) * 100) : 0;
+  const maxV =
+    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity)) : 0;
+
+  // Inning calculation (approximated from game total duration or max inning logged)
+  // For now we use the final score as requested
+  return `📊 WILDMAN REPORT: ${date}
+Game: ${game.away_team} @ ${game.home_team} (${game.final_score_away}-${game.final_score_home})
+Pitcher: ${game.pitcher_name}
+Line: ${kCount} K
+Velo: Max ${maxV} MPH
+Strikes: ${sPct}% (${strikes}/${total})`;
+}
+
+function copyReport(encodedReport) {
+  const report = atob(encodedReport);
+  navigator.clipboard.writeText(report).then(() => {
+    alert("Scout Report copied to clipboard! Ready to text.");
+  });
+}
+
 function closeStats() {
   document.getElementById("stats-modal").style.display = "none";
-}
-function renderStatsDisplay() {
-  const total = gameState.sessionPitches.length,
-    strikes = gameState.sessionPitches.filter(
-      (p) => p.result.includes("Strike") || p.result === "Foul",
-    ).length;
-  const pct = total > 0 ? ((strikes / total) * 100).toFixed(1) : 0;
-  document.getElementById("stats-display").innerHTML =
-    `<div class="stat-card"><label>Total</label><span>${total}</span></div><div class="stat-card"><label>Strike %</label><span>${pct}%</span></div>`;
 }
 async function endGame() {
   if (!confirm("Save this game to the Wildman Database?")) return;
