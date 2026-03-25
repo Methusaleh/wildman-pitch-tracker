@@ -21,6 +21,7 @@ let selectedHand = "R";
 let timerInterval;
 
 window.addEventListener("DOMContentLoaded", () => {
+  loadGame();
   setTimeout(() => {
     document.getElementById("splash-screen").style.opacity = "0";
     setTimeout(() => {
@@ -436,6 +437,7 @@ function processAndRenderStats(games, pitches) {
   `;
 
   // 3. Add the individual game rows
+  // Replace the loop at the bottom of processAndRenderStats with this:
   games.forEach((game) => {
     const gamePitches = pitches.filter((p) => p.game_id === game.id);
     const date = new Date(game.played_at).toLocaleDateString("en-US", {
@@ -443,13 +445,36 @@ function processAndRenderStats(games, pitches) {
       day: "numeric",
     });
 
+    // 1. Calculate K's for this specific game
+    let strikeouts = 0;
+    let sCount = 0;
+    gamePitches.forEach((p) => {
+      if (p.result === "Ball" || p.result === "In-Play" || p.result === "HBP") {
+        sCount = 0;
+      } else if (p.result.includes("Strike") || p.result === "Foul") {
+        if (sCount === 2 && p.result !== "Foul") {
+          strikeouts++;
+          sCount = 0;
+        } else if (p.result !== "Foul" || sCount < 2) sCount++;
+      }
+    });
+
+    // 2. Prepare the report and encode it for the button
+    const reportText = generateConciseReport(
+      game,
+      gamePitches,
+      strikeouts,
+      date,
+    );
+    const safeReport = btoa(unescape(encodeURIComponent(reportText))); // Safety for emojis
+
     html += `
       <div class="game-row" style="display:flex; justify-content:space-between; align-items:center; background:#1a1a1a; padding:10px; margin-bottom:5px; border-radius:8px;">
         <div class="game-info">
           <h4 style="margin:0; font-size:0.9rem;">${game.away_team} @ ${game.home_team}</h4>
-          <p style="margin:0; font-size:0.7rem; color:#555;">${date} • ${game.pitcher_name}</p>
+          <p style="margin:0; font-size:0.7rem; color:#555;">${date} • ${game.pitcher_name} • ${strikeouts}K</p>
         </div>
-        <button onclick="alert('Concise report coming in the next step!')" style="background:#333; color:var(--strike); border:none; padding:5px 10px; border-radius:4px; font-size:0.7rem; font-weight:bold;">REPORT</button>
+        <button onclick="copyReport('${safeReport}')" style="background:#333; color:var(--strike); border:none; padding:5px 10px; border-radius:4px; font-size:0.7rem; font-weight:bold;">REPORT</button>
       </div>
     `;
   });
@@ -567,4 +592,3 @@ function confirmSetup() {
   drawScoreboard();
   if (!gameState.timerActive) toggleTimer(); // Auto-start timer on setup
 }
-loadGame();
