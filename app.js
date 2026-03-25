@@ -17,6 +17,7 @@ let gameState = {
   activeAtBatPitches: [],
 };
 
+let rawStatsData = { games: [], pitches: [] };
 let selectedHand = "R";
 let timerInterval;
 
@@ -389,28 +390,86 @@ function loadGame() {
 }
 async function openStats() {
   const modal = document.getElementById("stats-modal");
-  const display = document.getElementById("stats-display");
-
   modal.style.display = "flex";
+
+  const display = document.getElementById("stats-display");
   display.innerHTML =
-    "<p style='text-align:center; width:100%; color:#888;'>Loading Season Data...</p>";
+    "<p style='text-align:center; width:100%;'>Syncing with Cloud...</p>";
 
   try {
-    // This talks to the live Neon DB
     const response = await fetch("/api/get-stats.js");
-    const data = await response.json();
+    rawStatsData = await response.json(); // Save to our global cache
 
-    if (data.games && data.pitches) {
-      processAndRenderStats(data.games, data.pitches);
+    if (rawStatsData.games && rawStatsData.games.length > 0) {
+      populateFilterDropdowns();
+      // Default view: Show everything initially
+      applyFilters();
     } else {
       display.innerHTML =
-        "<p style='text-align:center; width:100%;'>No games found in the cloud.</p>";
+        "<p style='text-align:center; width:100%;'>No cloud data found.</p>";
     }
   } catch (err) {
-    console.error("Stats Error:", err);
     display.innerHTML =
-      "<p style='text-align:center; width:100%; color:red;'>Database Connection Error</p>";
+      "<p style='text-align:center; width:100%; color:red;'>Sync Error</p>";
   }
+}
+
+function populateFilterDropdowns() {
+  const pSelect = document.getElementById("filter-pitcher");
+  const tSelect = document.getElementById("filter-team");
+
+  // Use "Sets" to get unique values only
+  const pitchers = [...new Set(rawStatsData.games.map((g) => g.pitcher_name))];
+  const teams = [
+    ...new Set(rawStatsData.games.map((g) => g.home_team || g.away_team)),
+  ];
+
+  pSelect.innerHTML =
+    `<option value="all">All Pitchers</option>` +
+    pitchers.map((p) => `<option value="${p}">${p}</option>`).join("");
+
+  tSelect.innerHTML =
+    `<option value="all">All Teams</option>` +
+    teams.map((t) => `<option value="${t}">${t}</option>`).join("");
+}
+
+function applyFilters() {
+  const selectedP = document.getElementById("filter-pitcher").value;
+  const selectedT = document.getElementById("filter-team").value;
+  const span = document.getElementById("filter-timespan").value;
+
+  const now = new Date();
+
+  // THE FILTERING ENGINE
+  let filteredGames = rawStatsData.games.filter((game) => {
+    const gameDate = new Date(game.played_at);
+
+    // 1. Filter by Pitcher
+    const matchP = selectedP === "all" || game.pitcher_name === selectedP;
+
+    // 2. Filter by Team
+    const matchT =
+      selectedT === "all" ||
+      game.home_team === selectedT ||
+      game.away_team === selectedT;
+
+    // 3. Filter by Time Span (The Calendar Math)
+    let matchTime = true;
+    if (span === "month") {
+      matchTime =
+        gameDate.getMonth() === now.getMonth() &&
+        gameDate.getFullYear() === now.getFullYear();
+    } else if (span === "week") {
+      const sunday = new Date(now.setDate(now.getDate() - now.getDay()));
+      sunday.setHours(0, 0, 0, 0);
+      matchTime = gameDate >= sunday;
+    }
+
+    return matchP && matchT && matchTime;
+  });
+
+  // Send the filtered results to be displayed
+  processAndRenderStats(filteredGames, rawStatsData.pitches);
 }
 
 function processAndRenderStats(games, pitches) {
@@ -521,6 +580,7 @@ async function endGame() {
   const payload = {
     gameData: {
       pitcherName: gameState.pitcherName,
+      pitcherTeam: gameState.pitcherTeam, // Add this!
       homeTeam: gameState.homeTeam,
       awayTeam: gameState.awayTeam,
       homeScore: gameState.homeScore,
@@ -581,14 +641,19 @@ function checkLocationMemory(home) {
     document.getElementById("location-input").value = last.location;
 }
 function confirmSetup() {
-  const h = document.getElementById("home-team-input").value,
-    a = document.getElementById("away-team-input").value;
-  if (!h || !a) return alert("Enter names");
+  const h = document.getElementById("home-team-input").value;
+  const a = document.getElementById("away-team-input").value;
+  const pt = document.getElementById("pitcher-team-input").value; // Get the new team
+
+  if (!h || !a || !pt) return alert("Enter Team Names and Pitcher's Team");
+
   gameState.homeTeam = h;
   gameState.awayTeam = a;
+  gameState.pitcherTeam = pt; // Save to gameState
   gameState.location = document.getElementById("location-input").value;
+
   document.getElementById("setup-screen").style.display = "none";
   saveToLocal();
   drawScoreboard();
-  if (!gameState.timerActive) toggleTimer(); // Auto-start timer on setup
+  if (!gameState.timerActive) toggleTimer();
 }

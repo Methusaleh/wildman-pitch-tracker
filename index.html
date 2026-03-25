@@ -41,30 +41,21 @@
     <div id="setup-screen" class="full-screen-overlay" style="display: none">
       <div class="setup-card">
         <h2 class="setup-title">GAME SETUP</h2>
-        <div class="setup-group">
-          <label>AWAY TEAM</label>
-          <input
-            type="text"
-            id="away-team-input"
-            list="team-history"
-            placeholder="Visitor Name"
-          />
-        </div>
-        <div class="setup-group">
-          <label>HOME TEAM</label>
-          <input
-            type="text"
-            id="home-team-input"
-            list="team-history"
-            placeholder="Home Name"
-            oninput="checkLocationMemory(this.value)"
-          />
-        </div>
+
         <div class="setup-group">
           <label>LOCATION</label>
           <input type="text" id="location-input" placeholder="Field Name" />
         </div>
-        <datalist id="team-history"></datalist>
+
+        <div class="setup-group">
+          <label>PITCHER'S TEAM (FOR STATS)</label>
+          <input
+            type="text"
+            id="pitcher-team-input"
+            placeholder="Ex: Piedmont Wildcats"
+          />
+        </div>
+
         <button class="btn-start-game" onclick="confirmSetup()">
           START TRACKER
         </button>
@@ -277,13 +268,29 @@
     <div id="stats-modal" class="modal">
       <div class="modal-content">
         <header class="modal-header">
-          <h2>Analytics</h2>
+          <h2>STAT FILTERS</h2>
           <button onclick="closeStats()" class="close-btn">X</button>
         </header>
+
+        <div class="filter-section">
+          <select id="filter-pitcher" onchange="updateTeamFilter()">
+            <option>All Pitchers</option>
+          </select>
+          <select id="filter-team">
+            <option>All Teams</option>
+          </select>
+          <select id="filter-timespan">
+            <option value="all">All-Time</option>
+            <option value="month">This Month</option>
+            <option value="week">This Week</option>
+            <option value="custom">Single Game (Date)</option>
+          </select>
+          <button class="btn-start-game" onclick="applyFilters()">
+            VIEW ANALYTICS
+          </button>
+        </div>
+
         <div id="stats-display" class="stats-grid"></div>
-        <button class="btn-share" onclick="exportStatCard()">
-          Share Stat Sheet
-        </button>
       </div>
     </div>
 
