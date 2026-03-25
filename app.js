@@ -424,7 +424,7 @@ async function endGame() {
     console.log("Sending data to Vercel...");
 
     // 2. We MUST use await here to pause the reload
-    const response = await fetch("/api/save-game", {
+    const response = await fetch("/api/save-game.js", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
