@@ -27,10 +27,26 @@ export default async function handler(req, res) {
 
     // 3. The Database Transaction
     const gameResult = await sql`
-            INSERT INTO games (pitcher_name, home_team, away_team, final_score_home, final_score_away, game_duration_seconds)
-            VALUES (${gameData.pitcherName || "Unknown"}, ${gameData.homeTeam || ""}, ${gameData.awayTeam || ""}, ${gameData.homeScore || 0}, ${gameData.awayScore || 0}, ${gameData.timerSeconds || 0})
-            RETURNING id;
-        `;
+        INSERT INTO games (
+            pitcher_name, 
+            pitcher_team, 
+            home_team, 
+            away_team, 
+            final_score_home, 
+            final_score_away, 
+            game_duration_seconds
+        )
+        VALUES (
+            ${gameData.pitcherName || "Unknown"}, 
+            ${gameData.pitcherTeam || ""}, 
+            ${gameData.homeTeam || ""}, 
+            ${gameData.awayTeam || ""}, 
+            ${gameData.homeScore || 0}, 
+            ${gameData.awayScore || 0}, 
+            ${gameData.timerSeconds || 0}
+        )
+        RETURNING id;
+    `;
 
     const gameId = gameResult[0].id;
 
