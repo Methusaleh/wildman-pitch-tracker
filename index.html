@@ -244,8 +244,19 @@
     </div>
 
     <div id="pitcher-modal" class="modal">
-      <div class="modal-content">
-        <h3>ADD NEW PITCHER</h3>
+      <div class="modal-content" style="max-width: 400px; padding: 30px">
+        <h3
+          style="
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #888;
+            font-size: 1rem;
+            letter-spacing: 1px;
+          "
+        >
+          ADD NEW PITCHER
+        </h3>
+
         <input
           type="text"
           id="new-p-first"
@@ -258,6 +269,18 @@
           placeholder="Last Name"
           class="setup-group-input"
         />
+
+        <label
+          style="
+            display: block;
+            font-size: 0.6rem;
+            color: #555;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+          "
+          >Throwing Hand</label
+        >
         <div class="hand-picker">
           <button
             class="btn-hand active"
@@ -270,7 +293,12 @@
             LEFTY
           </button>
         </div>
-        <button class="btn-start-game" onclick="saveNewPitcher()">
+
+        <button
+          class="btn-start-game"
+          onclick="saveNewPitcher()"
+          style="margin-top: 10px"
+        >
           SAVE PITCHER
         </button>
         <button class="btn-secondary" onclick="closePitcherModal()">

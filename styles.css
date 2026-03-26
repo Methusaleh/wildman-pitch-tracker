@@ -917,3 +917,22 @@ input[type="range"]::-webkit-slider-thumb {
 #specific-game-picker:focus {
   border-color: var(--accent);
 }
+
+/* Add space between inputs in the pitcher modals */
+#pitcher-modal .setup-group-input {
+  margin-bottom: 15px;
+  display: block; /* Ensures they stack correctly with the margin */
+}
+
+/* Add space between the last name and the hand picker buttons */
+#pitcher-modal .hand-picker {
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+/* Ensure the 'Cancel' link isn't stuck to the bottom of the Save button */
+#pitcher-modal .btn-secondary {
+  margin-top: 15px;
+  display: block;
+  width: 100%;
+}
