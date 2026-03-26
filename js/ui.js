@@ -52,9 +52,6 @@ function placePing(x, y) {
 function clearZoneUI() {
   // 1. Physically remove dots from the screen
   document.querySelectorAll(".ping").forEach((p) => p.remove());
-
-  // 2. Wipe the "Active" memory so the next load starts fresh
-  gameState.activeAtBatPitches = [];
 }
 
 function promptPitcherName() {

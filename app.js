@@ -114,8 +114,15 @@ document.getElementById("strike-zone").addEventListener("click", (e) => {
 });
 
 function recordPitch(result) {
+  if (gameState.pitcherName === "Select Pitcher") {
+    alert("Please select or add a pitcher before recording pitches!");
+    promptPitcherName(); // Open the selection automatically for him
+    return;
+  }
+
   if (!gameState.lastTap && result !== "HBP")
     return alert("Tap the zone first!");
+
   if (result === "In-Play") {
     document.getElementById("hit-overlay").style.display = "flex";
     return;
@@ -166,13 +173,19 @@ function getPitchColor(result) {
 
 function undoLastPitch() {
   if (gameState.sessionPitches.length === 0) return;
+
+  // 1. Remove the last recorded pitch from both arrays
   gameState.sessionPitches.pop();
+  gameState.activeAtBatPitches.pop(); // CRITICAL: Remove from current batter view too
 
-  clearZoneUI(); // In ui.js
-  WildmanEngine.reprocessHistory(); // In engine.js
+  // 2. Wipe the visual pings
+  clearZoneUI();
 
-  // Re-draw pings for current batter
-  gameState.activeAtBatPitches.forEach((p) => {
+  // 3. Let the engine reset the math (balls, strikes, total)
+  WildmanEngine.reprocessHistory();
+
+  // 4. REDRAW the pings that are left in activeAtBatPitches
+  (gameState.activeAtBatPitches || []).forEach((p) => {
     const ping = document.createElement("div");
     ping.className = "ping";
     ping.style.left = p.x + "%";
