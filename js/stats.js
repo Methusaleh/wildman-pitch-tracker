@@ -1,18 +1,13 @@
 function updateTimeOptions(type) {
-  // 1. Grab the elements (consistent naming is key!)
   const subSelect = document.getElementById("filter-sub-option");
   const dateInput = document.getElementById("filter-date");
+  if (!subSelect) return;
 
-  // 2. Safety Check: If they don't exist in HTML, don't crash
-  if (!subSelect || !dateInput) return;
-
-  // 3. Reset views: Hide both by default
   subSelect.style.display = "none";
-  dateInput.style.display = "none";
+  if (dateInput) dateInput.style.display = "none";
 
-  // 4. Handle logic based on Radio selection
   if (type === "all") {
-    applyFilters(); // Instant update for 'All'
+    applyFilters();
   } else if (type === "month") {
     subSelect.style.display = "block";
     const months = [
@@ -26,17 +21,32 @@ function updateTimeOptions(type) {
         }),
       ),
     ];
-
     subSelect.innerHTML =
       `<option value="">SELECT MONTH...</option>` +
       months.map((m) => `<option value="${m}">${m}</option>`).join("");
-  } else if (type === "week") {
-    // For now, we'll just show the same dropdown style for Week
+  } else if (type === "week" || type === "single") {
     subSelect.style.display = "block";
-    subSelect.innerHTML = `<option value="">SELECT WEEK...</option>`;
-    // (We can add the Sunday-Saturday grouping logic here next)
-  } else if (type === "single") {
-    dateInput.style.display = "block";
+
+    // Group by Sunday
+    const weeks = [
+      ...new Set(
+        rawStatsData.games.map((g) => {
+          const d = new Date(g.played_at);
+          const sun = new Date(d);
+          sun.setDate(d.getDate() - d.getDay()); // Roll back to Sunday
+          return sun.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+        }),
+      ),
+    ].sort((a, b) => new Date(b) - new Date(a)); // Newest weeks first
+
+    const label = type === "week" ? "SELECT WEEK..." : "PICK WEEK FIRST...";
+    subSelect.innerHTML =
+      `<option value="">${label}</option>` +
+      weeks.map((w) => `<option value="${w}">Week of ${w}</option>`).join("");
   }
 }
 
@@ -66,20 +76,12 @@ function populateFilterDropdowns() {
 function applyFilters() {
   const selectedP = document.getElementById("filter-pitcher").value;
   const selectedT = document.getElementById("filter-team").value;
-
-  // NEW: Grab value from the checked radio button
   const radioMatch = document.querySelector('input[name="timespan"]:checked');
   const span = radioMatch ? radioMatch.value : "all";
-
-  const selectedDate = document.getElementById("filter-date").value;
   const selectedSub = document.getElementById("filter-sub-option").value;
-
-  const now = new Date();
 
   let filteredGames = rawStatsData.games.filter((game) => {
     const gameDate = new Date(game.played_at);
-
-    // 1. Basic Filters
     const matchP = selectedP === "all" || game.pitcher_name === selectedP;
     const matchT =
       selectedT === "all" ||
@@ -87,42 +89,37 @@ function applyFilters() {
       game.home_team === selectedT ||
       game.away_team === selectedT;
 
-    // 2. Advanced Time Logic
     let matchTime = true;
 
-    if (span === "month") {
-      if (selectedSub) {
-        // Match specific month selected from dropdown (e.g., "March 2026")
-        const gameMonth = gameDate.toLocaleString("default", {
-          month: "long",
-          year: "numeric",
-        });
-        matchTime = gameMonth === selectedSub;
-      } else {
-        // Default: This current month
-        matchTime =
-          gameDate.getMonth() === now.getMonth() &&
-          gameDate.getFullYear() === now.getFullYear();
-      }
-    } else if (span === "week") {
-      const sunday = new Date();
-      sunday.setDate(now.getDate() - now.getDay());
-      sunday.setHours(0, 0, 0, 0);
-      matchTime = gameDate >= sunday;
-    } else if (span === "single" && selectedDate) {
-      // Compare YYYY-MM-DD strings for a perfect match
-      const offsetDate = new Date(
-        gameDate.getTime() - gameDate.getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .split("T")[0];
-      matchTime = offsetDate === selectedDate;
+    if (span === "month" && selectedSub) {
+      const gameMonth = gameDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+      matchTime = gameMonth === selectedSub;
+    } else if ((span === "week" || span === "single") && selectedSub) {
+      const sun = new Date(gameDate);
+      sun.setDate(gameDate.getDate() - gameDate.getDay());
+      const weekStr = sun.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      matchTime = weekStr === selectedSub;
     }
 
     return matchP && matchT && matchTime;
   });
 
-  processAndRenderStats(filteredGames, rawStatsData.pitches);
+  // SPECIAL: If searching for a "Single Game" and we have a week selected
+  if (span === "single" && selectedSub) {
+    showGamePicker(filteredGames);
+  } else {
+    // Remove game picker if not in "single" mode
+    const picker = document.getElementById("specific-game-picker");
+    if (picker) picker.style.display = "none";
+    processAndRenderStats(filteredGames, rawStatsData.pitches);
+  }
 }
 
 function processAndRenderStats(games, pitches) {
@@ -273,4 +270,38 @@ function copyReport(encodedReport) {
   navigator.clipboard.writeText(report).then(() => {
     alert("Scout Report copied to clipboard! Ready to text.");
   });
+}
+
+function showGamePicker(gamesInWeek) {
+  let picker = document.getElementById("specific-game-picker");
+
+  // Create it if it doesn't exist yet
+  if (!picker) {
+    picker = document.createElement("select");
+    picker.id = "specific-game-picker";
+    picker.className = "filter-sub-select"; // Should match your dropdown CSS
+    picker.style.marginTop = "10px";
+    document.getElementById("dynamic-time-container").appendChild(picker);
+  }
+
+  picker.style.display = "block";
+  picker.onchange = (e) => {
+    const gameId = e.target.value;
+    if (gameId) {
+      const single = gamesInWeek.filter((g) => g.id == gameId);
+      processAndRenderStats(single, rawStatsData.pitches);
+    }
+  };
+
+  picker.innerHTML =
+    `<option value="">SELECT SPECIFIC GAME...</option>` +
+    gamesInWeek
+      .map((g) => {
+        const d = new Date(g.played_at).toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+        });
+        return `<option value="${g.id}">${d}: ${g.away_team} ${g.final_score_away} - ${g.home_team} ${g.final_score_home}</option>`;
+      })
+      .join("");
 }
