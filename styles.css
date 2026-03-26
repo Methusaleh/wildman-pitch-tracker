@@ -754,3 +754,101 @@ input[type="range"]::-webkit-slider-thumb {
   border-bottom: 1px solid #333;
   flex-shrink: 0; /* Keep filters visible at all times */
 }
+
+/* --- ANALYTICS DASHBOARD --- */
+
+.stats-hero-container {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Big Hero Cards */
+.hero-card {
+  background: linear-gradient(145deg, #1a1a1a, #111);
+  border: 1px solid #333;
+  padding: 20px 10px;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.hero-card label {
+  display: block;
+  font-size: 0.65rem;
+  color: #888;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.hero-card span {
+  font-family: "Courier New", Courier, monospace; /* Digital look */
+  font-weight: 800;
+  display: block;
+}
+
+/* Mini Game Rows */
+.mini-game-row {
+  transition: transform 0.1s active;
+}
+
+.mini-game-row:active {
+  transform: scale(0.98);
+  background: #222 !important;
+}
+
+.game-meta h4 {
+  letter-spacing: 0.5px;
+}
+
+/* Filter Ribbon Styling */
+.filter-ribbon {
+  background: #000;
+  padding: 15px;
+  border-bottom: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-radio-group {
+  display: flex;
+  justify-content: space-between;
+  background: #111;
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.time-radio-group label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #666;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.time-radio-group input[type="radio"] {
+  display: none; /* Hide the actual dot */
+}
+
+/* Highlight the label when the hidden radio is checked */
+.time-radio-group label:has(input:checked) {
+  background: var(--accent);
+  color: #000;
+  border-radius: 6px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
