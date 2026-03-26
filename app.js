@@ -115,8 +115,7 @@ document.getElementById("strike-zone").addEventListener("click", (e) => {
 
 function recordPitch(result) {
   if (gameState.pitcherName === "Select Pitcher") {
-    alert("Please select or add a pitcher before recording pitches!");
-    promptPitcherName(); // Open the selection automatically for him
+    openPitcherPicker();
     return;
   }
 

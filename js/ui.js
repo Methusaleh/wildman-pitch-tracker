@@ -77,25 +77,6 @@ function clearZoneUI() {
   document.querySelectorAll(".ping").forEach((p) => p.remove());
 }
 
-function promptPitcherName() {
-  const roster = getRoster();
-  if (roster.length === 0) {
-    document.getElementById("pitcher-modal").style.display = "flex";
-    return;
-  }
-  let menu =
-    "Select Pitcher:\n" +
-    roster.map((p, i) => `${i + 1}. ${p.first} ${p.last}`).join("\n") +
-    "\n\nType 'NEW' for a new pitcher.";
-  const choice = prompt(menu);
-  if (choice?.toUpperCase() === "NEW")
-    document.getElementById("pitcher-modal").style.display = "flex";
-  else {
-    const idx = parseInt(choice) - 1;
-    if (roster[idx]) setPitcher(roster[idx]);
-  }
-}
-
 function setPitcher(p) {
   gameState.pitcherName = `${p.first} ${p.last}`;
   gameState.pitcherHand = p.hand;
@@ -161,4 +142,53 @@ function selectHand(h) {
   // Toggle the active classes visually
   document.getElementById("btn-right").classList.toggle("active", h === "R");
   document.getElementById("btn-left").classList.toggle("active", h === "L");
+}
+
+function openPitcherPicker() {
+  const modal = document.getElementById("pitcher-picker-modal");
+  const container = document.getElementById("pitcher-list-container");
+
+  if (!modal || !container) return;
+
+  // Show the modal
+  modal.style.display = "flex";
+
+  // Get the current roster from storage
+  const roster = JSON.parse(localStorage.getItem("wildmanRoster")) || [];
+
+  if (roster.length === 0) {
+    container.innerHTML = `<p style="color: #444; text-align: center; padding: 20px;">No pitchers found. Add one below!</p>`;
+    return;
+  }
+
+  // Build the list of names
+  container.innerHTML = roster
+    .map(
+      (p) => `
+    <div onclick="selectPitcherFromMenu(${p.id})" 
+         style="padding: 15px; background: #111; border: 1px solid #222; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: bold; color: #fff;">${p.first} ${p.last}</span>
+      <span style="color: var(--accent); font-size: 0.7rem; font-weight: 900;">${p.hand === "R" ? "RIGHTY" : "LEFTY"}</span>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+function selectPitcherFromMenu(id) {
+  const roster = JSON.parse(localStorage.getItem("wildmanRoster")) || [];
+  const p = roster.find((pitcher) => pitcher.id === id);
+  if (p) {
+    setPitcher(p);
+    closePitcherPicker();
+  }
+}
+
+function closePitcherPicker() {
+  document.getElementById("pitcher-picker-modal").style.display = "none";
+}
+
+function openNewPitcherForm() {
+  closePitcherPicker(); // Close the selection list
+  document.getElementById("pitcher-modal").style.display = "flex"; // Open the 'Add New' form
 }
