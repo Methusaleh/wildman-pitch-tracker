@@ -6,10 +6,15 @@ function updateTimeOptions(type) {
   container.style.display = "none";
   dateInput.style.display = "none";
 
+  if (!subSelect || !dateInput) return;
+
+  subSelect.style.display = "none";
+  dateInput.style.display = "none";
+
   if (type === "all") {
     applyFilters(); // Instant update
   } else if (type === "month") {
-    container.style.display = "block";
+    subSelect.style.display = "block";
     const months = [
       ...new Set(
         rawStatsData.games.map((g) => {
@@ -21,8 +26,8 @@ function updateTimeOptions(type) {
         }),
       ),
     ];
-    container.innerHTML =
-      `<option value="">Select Month...</option>` +
+    subSelect.innerHTML =
+      `<option value="">SELECT MONTH...</option>` +
       months.map((m) => `<option value="${m}">${m}</option>`).join("");
   } else if (type === "week") {
     container.style.display = "block";
@@ -60,8 +65,13 @@ function populateFilterDropdowns() {
 function applyFilters() {
   const selectedP = document.getElementById("filter-pitcher").value;
   const selectedT = document.getElementById("filter-team").value;
-  const span = document.getElementById("filter-timespan").value;
-  const selectedDate = document.getElementById("filter-date").value; // "YYYY-MM-DD"
+
+  // NEW: Grab value from the checked radio button
+  const radioMatch = document.querySelector('input[name="timespan"]:checked');
+  const span = radioMatch ? radioMatch.value : "all";
+
+  const selectedDate = document.getElementById("filter-date").value;
+  const selectedSub = document.getElementById("filter-sub-option").value;
 
   const now = new Date();
 
@@ -80,9 +90,19 @@ function applyFilters() {
     let matchTime = true;
 
     if (span === "month") {
-      matchTime =
-        gameDate.getMonth() === now.getMonth() &&
-        gameDate.getFullYear() === now.getFullYear();
+      if (selectedSub) {
+        // Match specific month selected from dropdown (e.g., "March 2026")
+        const gameMonth = gameDate.toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        });
+        matchTime = gameMonth === selectedSub;
+      } else {
+        // Default: This current month
+        matchTime =
+          gameDate.getMonth() === now.getMonth() &&
+          gameDate.getFullYear() === now.getFullYear();
+      }
     } else if (span === "week") {
       const sunday = new Date();
       sunday.setDate(now.getDate() - now.getDay());
