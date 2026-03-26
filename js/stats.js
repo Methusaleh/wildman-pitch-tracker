@@ -279,12 +279,13 @@ function showGamePicker(gamesInWeek) {
   if (!picker) {
     picker = document.createElement("select");
     picker.id = "specific-game-picker";
-    picker.className = "filter-sub-select"; // Should match your dropdown CSS
-    picker.style.marginTop = "10px";
+    // Append it to the container
     document.getElementById("dynamic-time-container").appendChild(picker);
   }
 
   picker.style.display = "block";
+
+  // Wire up the change event
   picker.onchange = (e) => {
     const gameId = e.target.value;
     if (gameId) {
@@ -293,6 +294,7 @@ function showGamePicker(gamesInWeek) {
     }
   };
 
+  // Fill with game scores
   picker.innerHTML =
     `<option value="">SELECT SPECIFIC GAME...</option>` +
     gamesInWeek
@@ -301,7 +303,7 @@ function showGamePicker(gamesInWeek) {
           month: "numeric",
           day: "numeric",
         });
-        return `<option value="${g.id}">${d}: ${g.away_team} ${g.final_score_away} - ${g.home_team} ${g.final_score_home}</option>`;
+        return `<option value="${g.id}">${d}: ${g.away_team} (${g.final_score_away}) @ ${g.home_team} (${g.final_score_home})</option>`;
       })
       .join("");
 }
