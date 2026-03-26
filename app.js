@@ -48,9 +48,11 @@ function toggleTimer() {
     clearInterval(timerInterval);
     gameState.timerActive = false;
     btn.innerText = "START";
+    btn.style.background = "#222";
   } else {
     gameState.timerActive = true;
     btn.innerText = "PAUSE";
+    btn.style.background = "#f44336";
     timerInterval = setInterval(() => {
       gameState.timerSeconds++;
       updateTimerDisplay();
@@ -224,6 +226,7 @@ function loadGame() {
   const saved = localStorage.getItem("currentPitchTrackerGame");
   if (saved) {
     gameState = JSON.parse(saved);
+    document.getElementById("app").style.display = "flex";
     gameState.timerActive = false;
     drawScoreboard();
     updateTimerDisplay();
@@ -306,7 +309,8 @@ function confirmSetup() {
   gameState.location = document.getElementById("location-input").value;
 
   document.getElementById("setup-screen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
   saveToLocal();
   drawScoreboard();
-  if (!gameState.timerActive) toggleTimer();
 }
