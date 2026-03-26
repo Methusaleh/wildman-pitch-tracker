@@ -102,3 +102,43 @@ function closeStats() {
 function closePitcherModal() {
   document.getElementById("pitcher-modal").style.display = "none";
 }
+
+function saveNewPitcher() {
+  const first = document.getElementById("new-p-first").value;
+  const last = document.getElementById("new-p-last").value;
+
+  // NEW: Find which hand button is currently active
+  const handBtn = document.querySelector(".btn-hand.active");
+  const hand = handBtn
+    ? handBtn.innerText.includes("RIGHT")
+      ? "R"
+      : "L"
+    : "R";
+
+  if (!first || !last) return alert("Enter full name");
+
+  const roster = getRoster();
+  const newP = {
+    id: Date.now(),
+    first: first,
+    last: last,
+    hand: hand,
+  };
+
+  roster.push(newP);
+  localStorage.setItem("wildmanRoster", JSON.stringify(roster));
+
+  // Update the game state and close
+  setPitcher(newP);
+  closePitcherModal();
+
+  // Clear inputs for next time
+  document.getElementById("new-p-first").value = "";
+  document.getElementById("new-p-last").value = "";
+}
+
+function selectHand(h) {
+  // Toggle the active classes visually
+  document.getElementById("btn-right").classList.toggle("active", h === "R");
+  document.getElementById("btn-left").classList.toggle("active", h === "L");
+}
