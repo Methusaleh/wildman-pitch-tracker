@@ -289,119 +289,73 @@
     <div id="stats-modal" class="modal">
       <div class="modal-content">
         <header class="modal-header">
-          <h2>STAT FILTERS</h2>
+          <h2>ANALYTICS</h2>
           <button onclick="closeStats()" class="close-btn">X</button>
         </header>
 
-        <div
-          class="filter-section"
-          style="
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding: 15px;
-            background: #1a1a1a;
-            border-radius: 12px;
-            margin-bottom: 20px;
-          "
-        >
-          <label
-            style="
-              font-size: 0.7rem;
-              color: #666;
-              font-weight: bold;
-              margin-bottom: -5px;
-            "
-            >PITCHER</label
-          >
-          <select
-            id="filter-pitcher"
-            style="
-              width: 100%;
-              padding: 12px;
-              border-radius: 8px;
-              background: #000;
-              color: white;
-              border: 1px solid #333;
-            "
-          >
-            <option value="all">All Pitchers</option>
-          </select>
+        <div class="filter-ribbon">
+          <div class="filter-row">
+            <select id="filter-pitcher">
+              <option value="all">Pitcher</option>
+            </select>
+            <select id="filter-team">
+              <option value="all">Team</option>
+            </select>
+          </div>
 
-          <label
-            style="
-              font-size: 0.7rem;
-              color: #666;
-              font-weight: bold;
-              margin-bottom: -5px;
-            "
-            >TEAM</label
-          >
-          <select
-            id="filter-team"
-            style="
-              width: 100%;
-              padding: 12px;
-              border-radius: 8px;
-              background: #000;
-              color: white;
-              border: 1px solid #333;
-            "
-          >
-            <option value="all">All Teams</option>
-          </select>
+          <div class="time-radio-group">
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="all"
+                checked
+                onchange="updateTimeOptions('all')"
+              />
+              All</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="month"
+                onchange="updateTimeOptions('month')"
+              />
+              Month</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="week"
+                onchange="updateTimeOptions('week')"
+              />
+              Week</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="single"
+                onchange="updateTimeOptions('single')"
+              />
+              Game</label
+            >
+          </div>
 
-          <label
-            style="
-              font-size: 0.7rem;
-              color: #666;
-              font-weight: bold;
-              margin-bottom: -5px;
-            "
-            >TIME SPAN</label
-          >
-          <select
-            id="filter-timespan"
-            onchange="toggleDateInput(this.value)"
-            style="
-              width: 100%;
-              padding: 12px;
-              border-radius: 8px;
-              background: #000;
-              color: white;
-              border: 1px solid #333;
-            "
-          >
-            <option value="all">All-Time</option>
-            <option value="month">This Month</option>
-            <option value="week">This Week (Sun-Sat)</option>
-            <option value="single">Single Game (Select Date)</option>
-          </select>
+          <div id="dynamic-time-container">
+            <select id="filter-sub-option" style="display: none"></select>
+            <input type="date" id="filter-date" style="display: none" />
+          </div>
 
-          <input
-            type="date"
-            id="filter-date"
-            style="
-              display: none;
-              width: 100%;
-              padding: 12px;
-              border-radius: 8px;
-              background: #000;
-              color: white;
-              border: 1px solid var(--accent);
-            "
-          />
-
-          <button
-            class="btn-start-game"
-            onclick="applyFilters()"
-            style="margin-top: 10px"
-          >
+          <button class="btn-update-stats" onclick="applyFilters()">
             UPDATE ANALYTICS
           </button>
         </div>
 
-        <div id="stats-display" class="stats-grid"></div>
+        <div id="stats-display" class="stats-main-view"></div>
+
+        <div id="recent-games-footer" class="mini-games-list"></div>
       </div>
     </div>
 

@@ -1,3 +1,39 @@
+function updateTimeOptions(type) {
+  const container = document.getElementById("filter-sub-option");
+  const dateInput = document.getElementById("filter-date");
+
+  // Reset views
+  container.style.display = "none";
+  dateInput.style.display = "none";
+
+  if (type === "all") {
+    applyFilters(); // Instant update
+  } else if (type === "month") {
+    container.style.display = "block";
+    const months = [
+      ...new Set(
+        rawStatsData.games.map((g) => {
+          const d = new Date(g.played_at);
+          return d.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          });
+        }),
+      ),
+    ];
+    container.innerHTML =
+      `<option value="">Select Month...</option>` +
+      months.map((m) => `<option value="${m}">${m}</option>`).join("");
+  } else if (type === "week") {
+    container.style.display = "block";
+    // Logic to group games by 'Week of [Date]'
+    container.innerHTML = `<option value="">Select Week...</option>`;
+    // ... (populate week logic)
+  } else if (type === "single") {
+    dateInput.style.display = "block";
+  }
+}
+
 function populateFilterDropdowns() {
   const pSelect = document.getElementById("filter-pitcher");
   const tSelect = document.getElementById("filter-team");
@@ -70,39 +106,55 @@ function applyFilters() {
 
 function processAndRenderStats(games, pitches) {
   const display = document.getElementById("stats-display");
-
+  // Ensure we have a clean slate
   display.innerHTML = "";
 
-  // 1. Calculate Season Totals
-  const totalP = pitches.length;
-  const strikes = pitches.filter(
+  // 1. CALCULATE ANALYTICS
+  // We only want to calculate stats for the games currently in our filtered list
+  const filteredGameIds = games.map((g) => g.id);
+  const activePitches = pitches.filter((p) =>
+    filteredGameIds.includes(p.game_id),
+  );
+
+  const totalP = activePitches.length;
+  const strikes = activePitches.filter(
     (p) => p.result && (p.result.includes("Strike") || p.result === "Foul"),
   ).length;
   const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
   const maxV =
-    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity || 0)) : 0;
+    activePitches.length > 0
+      ? Math.max(...activePitches.map((p) => p.velocity || 0))
+      : 0;
 
-  // 2. Build the HTML (Using your existing stat-card classes)
+  // 2. RENDER HERO SECTION (The Big Dashboard)
   let html = `
-    <div class="stats-summary-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-       <div class="stat-card"><label>Total Pitches</label><span>${totalP}</span></div>
-       <div class="stat-card"><label>Season Max</label><span>${maxV} <small>MPH</small></span></div>
-       <div class="stat-card"><label>Strike %</label><span>${sPct}%</span></div>
-       <div class="stat-card"><label>Total Games</label><span>${games.length}</span></div>
-    </div>
-    <h3 style="font-size: 0.8rem; color: #666; margin-bottom: 10px; text-transform: uppercase;">Recent Games</h3>
-  `;
+        <div class="stats-hero-container" style="padding: 10px;">
+            <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2.5rem; color: var(--strike);">${sPct}%</span></div>
+                <div class="stat-card hero-card"><label>MAX VELO</label><span style="font-size: 2.5rem; color: var(--accent);">${maxV} <small style="font-size: 1rem;">MPH</small></span></div>
+                <div class="stat-card"><label>TOTAL PITCHES</label><span>${totalP}</span></div>
+                <div class="stat-card"><label>SESSIONS</label><span>${games.length}</span></div>
+            </div>
+            
+            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS (MAX 3)</h3>
+            <div class="mini-games-list">
+    `;
 
-  // 3. Add the individual game rows
-  // Replace the loop at the bottom of processAndRenderStats with this:
-  games.forEach((game) => {
+  // 3. RENDER RECENT GAMES (Limited to top 3)
+  const recentGames = games.slice(0, 3);
+
+  if (recentGames.length === 0) {
+    html += `<p style="color:#444; text-align:center; font-style:italic;">No games match these filters.</p>`;
+  }
+
+  recentGames.forEach((game) => {
     const gamePitches = pitches.filter((p) => p.game_id === game.id);
     const date = new Date(game.played_at).toLocaleDateString("en-US", {
       month: "numeric",
       day: "numeric",
     });
 
-    // 1. Calculate K's for this specific game
+    // Calculate K's for this specific game
     let strikeouts = 0;
     let sCount = 0;
     gamePitches.forEach((p) => {
@@ -116,28 +168,53 @@ function processAndRenderStats(games, pitches) {
       }
     });
 
-    // 2. Prepare the report and encode it for the button
     const reportText = generateConciseReport(
       game,
       gamePitches,
       strikeouts,
       date,
     );
-    const safeReport = btoa(unescape(encodeURIComponent(reportText))); // Safety for emojis
+    const safeReport = btoa(unescape(encodeURIComponent(reportText)));
 
     html += `
-      <div class="game-row" style="display:flex; justify-content:space-between; align-items:center; background:#1a1a1a; padding:10px; margin-bottom:5px; border-radius:8px;">
-        <div class="game-info">
-          <h4 style="margin:0; font-size:0.9rem;">${game.away_team} @ ${game.home_team}</h4>
-          <p style="margin:0; font-size:0.7rem; color:#555;">${date} • ${game.pitcher_name} • ${strikeouts}K</p>
-        </div>
-        <button onclick="copyReport('${safeReport}')" style="background:#333; color:var(--strike); border:none; padding:5px 10px; border-radius:4px; font-size:0.7rem; font-weight:bold;">REPORT</button>
-      </div>
-    `;
+            <div class="mini-game-row" 
+                 onclick="viewSingleGameStats('${game.id}')"
+                 style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; margin-bottom:8px; border-radius:10px; border: 1px solid #222; cursor: pointer;">
+                <div class="game-meta">
+                    <h4 style="margin:0; font-size:0.85rem; color:#eee;">${game.away_team} @ ${game.home_team}</h4>
+                    <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} PITCHES</p>
+                </div>
+                <button onclick="event.stopPropagation(); copyReport('${safeReport}')" 
+                        style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 800;">
+                    REPORT
+                </button>
+            </div>
+        `;
   });
 
-  html += `</div>`;
+  html += `</div></div>`;
   display.innerHTML = html;
+}
+
+/**
+ * Helper to jump into a single game's analytics when clicked
+ */
+function viewSingleGameStats(gameId) {
+  const game = rawStatsData.games.find((g) => g.id == gameId);
+  if (game) {
+    // We pass a single game in an array, and all pitches.
+    // processAndRenderStats will handle the internal filtering.
+    processAndRenderStats([game], rawStatsData.pitches);
+
+    // Visual feedback that we are looking at a specific game
+    const display = document.getElementById("stats-display");
+    const backBtn = document.createElement("button");
+    backBtn.innerText = "← BACK TO ALL";
+    backBtn.style =
+      "background:none; border:none; color:var(--accent); font-size:0.7rem; font-weight:bold; margin-bottom:10px; cursor:pointer;";
+    backBtn.onclick = () => applyFilters(); // Reset to current filters
+    display.prepend(backBtn);
+  }
 }
 
 function toggleDateInput(value) {
