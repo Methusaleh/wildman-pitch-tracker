@@ -1,3 +1,26 @@
+let inningPressTimer;
+let isLongPress = false;
+
+function startInningTimer() {
+  isLongPress = false;
+  // Hold for 600ms to go backward
+  inningPressTimer = setTimeout(() => {
+    isLongPress = true;
+    adjustInning(-1);
+  }, 600);
+}
+
+function stopInningTimer() {
+  if (inningPressTimer) {
+    clearTimeout(inningPressTimer);
+    // Only go forward if it wasn't a long press
+    if (!isLongPress) {
+      adjustInning(1);
+    }
+    inningPressTimer = null; // Reset for next tap
+  }
+}
+
 function showHomeScreen() {
   document.getElementById("setup-screen").style.display = "none";
   document.getElementById("home-screen").style.display = "flex";

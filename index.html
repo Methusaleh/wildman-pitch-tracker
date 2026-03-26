@@ -92,8 +92,14 @@
           </h2>
           <div class="game-status-row">
             <span
-              onclick="adjustInning(1)"
-              style="cursor: pointer; padding: 5px"
+              onpointerdown="startInningTimer()"
+              onpointerup="stopInningTimer()"
+              style="
+                cursor: pointer;
+                padding: 5px;
+                user-select: none;
+                -webkit-user-select: none;
+              "
             >
               INN <b id="display-inning">1</b>
             </span>
