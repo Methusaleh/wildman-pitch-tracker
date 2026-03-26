@@ -652,14 +652,15 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .game-row {
-  background: #1a1a1a;
-  margin-bottom: 8px;
-  padding: 12px;
-  border-radius: 10px;
+  background: #222;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-left: 4px solid var(--accent);
+  border: 1px solid #333;
 }
 
 .game-info h4 {
@@ -704,6 +705,10 @@ input[type="range"]::-webkit-slider-thumb {
   margin: 0 auto;
   border: none;
   padding: 0; /* Remove default padding to use our own layout */
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Header styling */
@@ -711,9 +716,11 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0 20px 0;
-  border-bottom: 1px solid #222;
+  padding: 20px;
+  border-bottom: 1px solid #333;
   margin-bottom: 20px;
+  background: #111;
+  flex-shrink: 0;
 }
 
 .close-btn {
@@ -739,4 +746,11 @@ input[type="range"]::-webkit-slider-thumb {
 .filter-section select:focus {
   border-color: var(--accent) !important;
   outline: none;
+}
+
+.filter-section {
+  padding: 15px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0; /* Keep filters visible at all times */
 }

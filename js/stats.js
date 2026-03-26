@@ -71,6 +71,8 @@ function applyFilters() {
 function processAndRenderStats(games, pitches) {
   const display = document.getElementById("stats-display");
 
+  display.innerHTML = "";
+
   // 1. Calculate Season Totals
   const totalP = pitches.length;
   const strikes = pitches.filter(
@@ -82,13 +84,13 @@ function processAndRenderStats(games, pitches) {
 
   // 2. Build the HTML (Using your existing stat-card classes)
   let html = `
-    <div class="stat-card"><label>Total Pitches</label><span>${totalP}</span></div>
-    <div class="stat-card"><label>Season Max</label><span>${maxV} <small>MPH</small></span></div>
-    <div class="stat-card"><label>Strike %</label><span>${sPct}%</span></div>
-    <div class="stat-card"><label>Total Games</label><span>${games.length}</span></div>
-    
-    <div style="grid-column: 1/-1; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
-      <h3 style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">RECENT GAMES</h3>
+    <div class="stats-summary-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+       <div class="stat-card"><label>Total Pitches</label><span>${totalP}</span></div>
+       <div class="stat-card"><label>Season Max</label><span>${maxV} <small>MPH</small></span></div>
+       <div class="stat-card"><label>Strike %</label><span>${sPct}%</span></div>
+       <div class="stat-card"><label>Total Games</label><span>${games.length}</span></div>
+    </div>
+    <h3 style="font-size: 0.8rem; color: #666; margin-bottom: 10px; text-transform: uppercase;">Recent Games</h3>
   `;
 
   // 3. Add the individual game rows
