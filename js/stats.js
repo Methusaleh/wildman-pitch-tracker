@@ -124,11 +124,13 @@ function applyFilters() {
 
 function processAndRenderStats(games, pitches) {
   const display = document.getElementById("stats-display");
+  if (!display) return;
+
   // Ensure we have a clean slate
   display.innerHTML = "";
 
   // 1. CALCULATE ANALYTICS
-  // We only want to calculate stats for the games currently in our filtered list
+  // Filter pitches to only those belonging to the games currently in the filtered list
   const filteredGameIds = games.map((g) => g.id);
   const activePitches = pitches.filter((p) =>
     filteredGameIds.includes(p.game_id),
@@ -136,79 +138,135 @@ function processAndRenderStats(games, pitches) {
 
   const totalP = activePitches.length;
   const strikes = activePitches.filter(
-    (p) => p.result && (p.result.includes("Strike") || p.result === "Foul"),
+    (p) =>
+      p.result &&
+      (p.result.includes("Strike") ||
+        p.result === "Foul" ||
+        p.result === "In-Play"),
   ).length;
+
   const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
   const maxV =
     activePitches.length > 0
       ? Math.max(...activePitches.map((p) => p.velocity || 0))
       : 0;
 
-  // 2. RENDER HERO SECTION (The Big Dashboard)
-  let html = `
-        <div class="stats-hero-container" style="padding: 10px;">
-            <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
-                <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2.5rem; color: var(--strike);">${sPct}%</span></div>
-                <div class="stat-card hero-card"><label>MAX VELO</label><span style="font-size: 2.5rem; color: var(--accent);">${maxV} <small style="font-size: 1rem;">MPH</small></span></div>
-                <div class="stat-card"><label>TOTAL PITCHES</label><span>${totalP}</span></div>
-                <div class="stat-card"><label>SESSIONS</label><span>${games.length}</span></div>
-            </div>
-            
-            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS (MAX 3)</h3>
-            <div class="mini-games-list">
-    `;
+  // 2. FIRST PITCH STRIKE (FPS) LOGIC
+  // We identify the first pitch of every at-bat by the 0-0 count
+  const firstPitches = activePitches.filter((p) => p.countBefore === "0 - 0");
+  const totalAtBats = firstPitches.length;
+  const fpsStrikes = firstPitches.filter(
+    (p) =>
+      p.result.includes("Strike") ||
+      p.result === "Foul" ||
+      p.result === "In-Play",
+  ).length;
 
-  // 3. RENDER RECENT GAMES (Limited to top 3)
+  const fpsPct =
+    totalAtBats > 0 ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) : 0;
+
+  // 3. PITCH TENDENCIES LOGIC
+  const tendencies = calculateTendencies(activePitches);
+
+  // 4. RENDER HERO SECTION & TENDENCY TABLE
+  let html = `
+    <div class="stats-hero-container" style="padding: 10px;">
+        <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+            <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2.5rem; color: var(--strike);">${sPct}%</span></div>
+            <div class="stat-card hero-card"><label>1ST PITCH STR%</label><span style="font-size: 2.5rem; color: #ffeb3b;">${fpsPct}%</span></div>
+            <div class="stat-card"><label>MAX VELO</label><span style="color: var(--accent); font-weight: 800;">${maxV} MPH</span></div>
+            <div class="stat-card"><label>TOTAL PITCHES</label><span>${totalP}</span></div>
+        </div>
+
+        <div class="tendency-container" style="margin-bottom: 25px;">
+            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px;">PITCH TENDENCIES</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #111; border-radius: 10px; overflow: hidden;">
+                <thead>
+                    <tr style="background: #1a1a1a; color: #888; text-align: left;">
+                        <th style="padding: 10px;">TYPE</th>
+                        <th style="padding: 10px;">QTY</th>
+                        <th style="padding: 10px;">AVG</th>
+                        <th style="padding: 10px;">MAX</th>
+                        <th style="padding: 10px;">STRIKE%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tendencies
+                      .map(
+                        (t) => `
+                        <tr style="border-bottom: 1px solid #222;">
+                            <td style="padding: 12px; font-weight: bold; color: var(--accent);">${t.label}</td>
+                            <td style="padding: 12px;">${t.count}</td>
+                            <td style="padding: 12px;">${t.avgV}</td>
+                            <td style="padding: 12px;">${t.maxV}</td>
+                            <td style="padding: 12px; color: var(--strike); font-weight: bold;">${t.sPct}%</td>
+                        </tr>
+                    `,
+                      )
+                      .join("")}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS (MAX 3)</h3>
+        <div class="mini-games-list">
+  `;
+
+  // 5. RENDER RECENT GAMES
   const recentGames = games.slice(0, 3);
 
   if (recentGames.length === 0) {
-    html += `<p style="color:#444; text-align:center; font-style:italic;">No games match these filters.</p>`;
-  }
+    html += `<p style="color:#444; text-align:center; font-style:italic; padding: 20px;">No games match these filters.</p>`;
+  } else {
+    recentGames.forEach((game) => {
+      const gamePitches = pitches.filter((p) => p.game_id === game.id);
+      const date = new Date(game.played_at).toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+      });
 
-  recentGames.forEach((game) => {
-    const gamePitches = pitches.filter((p) => p.game_id === game.id);
-    const date = new Date(game.played_at).toLocaleDateString("en-US", {
-      month: "numeric",
-      day: "numeric",
-    });
-
-    // Calculate K's for this specific game
-    let strikeouts = 0;
-    let sCount = 0;
-    gamePitches.forEach((p) => {
-      if (p.result === "Ball" || p.result === "In-Play" || p.result === "HBP") {
-        sCount = 0;
-      } else if (p.result.includes("Strike") || p.result === "Foul") {
-        if (sCount === 2 && p.result !== "Foul") {
-          strikeouts++;
+      // Calculate K's for this specific game
+      let strikeouts = 0;
+      let sCount = 0;
+      gamePitches.forEach((p) => {
+        if (
+          p.result === "Ball" ||
+          p.result === "In-Play" ||
+          p.result === "HBP"
+        ) {
           sCount = 0;
-        } else if (p.result !== "Foul" || sCount < 2) sCount++;
-      }
-    });
+        } else if (p.result.includes("Strike") || p.result === "Foul") {
+          if (sCount === 2 && p.result !== "Foul") {
+            strikeouts++;
+            sCount = 0;
+          } else if (p.result !== "Foul" || sCount < 2) sCount++;
+        }
+      });
 
-    const reportText = generateConciseReport(
-      game,
-      gamePitches,
-      strikeouts,
-      date,
-    );
-    const safeReport = btoa(unescape(encodeURIComponent(reportText)));
+      const reportText = generateConciseReport(
+        game,
+        gamePitches,
+        strikeouts,
+        date,
+      );
+      const safeReport = btoa(unescape(encodeURIComponent(reportText)));
 
-    html += `
-            <div class="mini-game-row" 
-                 onclick="viewSingleGameStats('${game.id}')"
-                 style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; margin-bottom:8px; border-radius:10px; border: 1px solid #222; cursor: pointer;">
-                <div class="game-meta">
-                    <h4 style="margin:0; font-size:0.85rem; color:#eee;">${game.away_team} @ ${game.home_team}</h4>
-                    <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} PITCHES</p>
-                </div>
-                <button onclick="event.stopPropagation(); copyReport('${safeReport}')" 
-                        style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 800;">
-                    REPORT
-                </button>
+      html += `
+        <div class="mini-game-row" 
+             onclick="viewSingleGameStats('${game.id}')"
+             style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; margin-bottom:8px; border-radius:10px; border: 1px solid #222; cursor: pointer;">
+            <div class="game-meta">
+                <h4 style="margin:0; font-size:0.85rem; color:#eee;">${game.away_team} @ ${game.home_team}</h4>
+                <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} PITCHES</p>
             </div>
-        `;
-  });
+            <button onclick="event.stopPropagation(); copyReport('${safeReport}')" 
+                    style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 800;">
+                REPORT
+            </button>
+        </div>
+      `;
+    });
+  }
 
   html += `</div></div>`;
   display.innerHTML = html;
@@ -306,4 +364,39 @@ function showGamePicker(gamesInWeek) {
         return `<option value="${g.id}">${d}: ${g.away_team} (${g.final_score_away}) @ ${g.home_team} (${g.final_score_home})</option>`;
       })
       .join("");
+}
+
+function calculateTendencies(pitches) {
+  const types = ["FB", "BR", "CH"];
+  const labels = { FB: "Fastball", BR: "Breaking", CH: "Changeup" };
+
+  return types
+    .map((type) => {
+      const typePitches = pitches.filter((p) => p.type === type);
+      const count = typePitches.length;
+
+      if (count === 0) return null;
+
+      const strikes = typePitches.filter(
+        (p) =>
+          p.result.includes("Strike") ||
+          p.result === "Foul" ||
+          p.result === "In-Play",
+      ).length;
+
+      const velocities = typePitches
+        .map((p) => p.velocity)
+        .filter((v) => v > 0);
+      const avgV =
+        velocities.length > 0
+          ? (velocities.reduce((a, b) => a + b, 0) / velocities.length).toFixed(
+              1,
+            )
+          : "-";
+      const maxV = velocities.length > 0 ? Math.max(...velocities) : "-";
+      const sPct = ((strikes / count) * 100).toFixed(1);
+
+      return { label: labels[type], count, avgV, maxV, sPct };
+    })
+    .filter((t) => t !== null);
 }
