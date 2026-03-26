@@ -1,18 +1,18 @@
 function updateTimeOptions(type) {
-  const container = document.getElementById("filter-sub-option");
+  // 1. Grab the elements (consistent naming is key!)
+  const subSelect = document.getElementById("filter-sub-option");
   const dateInput = document.getElementById("filter-date");
 
-  // Reset views
-  container.style.display = "none";
-  dateInput.style.display = "none";
-
+  // 2. Safety Check: If they don't exist in HTML, don't crash
   if (!subSelect || !dateInput) return;
 
+  // 3. Reset views: Hide both by default
   subSelect.style.display = "none";
   dateInput.style.display = "none";
 
+  // 4. Handle logic based on Radio selection
   if (type === "all") {
-    applyFilters(); // Instant update
+    applyFilters(); // Instant update for 'All'
   } else if (type === "month") {
     subSelect.style.display = "block";
     const months = [
@@ -26,14 +26,15 @@ function updateTimeOptions(type) {
         }),
       ),
     ];
+
     subSelect.innerHTML =
       `<option value="">SELECT MONTH...</option>` +
       months.map((m) => `<option value="${m}">${m}</option>`).join("");
   } else if (type === "week") {
-    container.style.display = "block";
-    // Logic to group games by 'Week of [Date]'
-    container.innerHTML = `<option value="">Select Week...</option>`;
-    // ... (populate week logic)
+    // For now, we'll just show the same dropdown style for Week
+    subSelect.style.display = "block";
+    subSelect.innerHTML = `<option value="">SELECT WEEK...</option>`;
+    // (We can add the Sunday-Saturday grouping logic here next)
   } else if (type === "single") {
     dateInput.style.display = "block";
   }

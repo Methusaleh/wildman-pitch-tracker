@@ -310,42 +310,51 @@
                 name="timespan"
                 value="all"
                 checked
-                onchange="updateTimeOptions('all')"
+                onchange="updateTimeOptions(this.value)"
               />
-              All</label
+              ALL</label
             >
             <label
               ><input
                 type="radio"
                 name="timespan"
                 value="month"
-                onchange="updateTimeOptions('month')"
+                onchange="updateTimeOptions(this.value)"
               />
-              Month</label
+              MONTH</label
             >
             <label
               ><input
                 type="radio"
                 name="timespan"
                 value="week"
-                onchange="updateTimeOptions('week')"
+                onchange="updateTimeOptions(this.value)"
               />
-              Week</label
+              WEEK</label
             >
             <label
               ><input
                 type="radio"
                 name="timespan"
                 value="single"
-                onchange="updateTimeOptions('single')"
+                onchange="updateTimeOptions(this.value)"
               />
-              Game</label
+              GAME</label
             >
           </div>
 
-          <div id="dynamic-time-container">
-            <select id="filter-sub-option" style="display: none"></select>
-            <input type="date" id="filter-date" style="display: none" />
+          <div id="dynamic-time-container" style="margin-top: 10px">
+            <select
+              id="filter-sub-option"
+              style="display: none"
+              onchange="applyFilters()"
+            ></select>
+            <input
+              type="date"
+              id="filter-date"
+              style="display: none"
+              onchange="applyFilters()"
+            />
           </div>
 
           <button class="btn-update-stats" onclick="applyFilters()">
