@@ -153,9 +153,10 @@ function processAndRenderStats(games, pitches) {
 
   // 2. FIRST PITCH STRIKE (FPS) LOGIC
   const firstPitches = activePitches.filter((p) => {
-    if (!p.countBefore) return false;
-    // Strip all spaces so "0-0", "0 - 0", etc. all match "0-0"
-    return p.countBefore.toString().replace(/\s+/g, "") === "0-0";
+    // Check for 'count_before' (DB style) or 'countBefore' (Local style)
+    const count = p.count_before || p.countBefore;
+    if (!count) return false;
+    return count.toString().replace(/\s+/g, "") === "0-0";
   });
 
   const totalAtBats = firstPitches.length;
@@ -166,8 +167,11 @@ function processAndRenderStats(games, pitches) {
       p.result === "In-Play",
   ).length;
 
+  // If no counts were found in the data, display "N/A" instead of "0%"
   const fpsPct =
-    totalAtBats > 0 ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) : 0;
+    totalAtBats > 0
+      ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) + "%"
+      : "N/A";
 
   // 3. PITCH TENDENCIES LOGIC
   const tendencies = calculateTendencies(activePitches);
@@ -374,16 +378,11 @@ function calculateTendencies(pitches) {
   const types = ["FB", "BR", "CH"];
   const labels = { FB: "Fastball", BR: "Breaking", CH: "Changeup" };
 
-  // LOG: Let's see what the app is actually saving
-  if (pitches.length > 0) console.log("Sample Pitch Object:", pitches[0]);
-
   return types
     .map((type) => {
       const typePitches = pitches.filter((p) => {
-        // Look at EVERY possible type key
-        const val = (p.type || p.pitchType || p.currentPitchType || "")
-          .toString()
-          .toUpperCase();
+        // Look for 'pitch_type' (from DB) or 'type' (from local)
+        const val = (p.pitch_type || p.type || "").toString().toUpperCase();
         return val === type || val.startsWith(type);
       });
 
@@ -396,7 +395,6 @@ function calculateTendencies(pitches) {
           p.result === "In-Play",
       ).length;
 
-      // Support .speed or .velocity
       const vels = typePitches
         .map((p) => p.velocity || p.speed || 0)
         .filter((v) => v > 0);
