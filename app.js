@@ -141,9 +141,12 @@ function finishRecording(result, direction = null) {
     y: gameState.lastTap?.y || 50,
     type: gameState.currentPitchType,
     speed: parseInt(speed),
+    velocity: parseInt(speed),
     result,
     direction,
+    countBefore: `${gameState.balls}-${gameState.strikes}`,
     timestamp: Date.now(),
+    game_id: gamestate.gameId,
   };
 
   gameState.sessionPitches.push(newPitch);

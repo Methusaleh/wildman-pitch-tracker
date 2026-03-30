@@ -377,6 +377,10 @@ function calculateTendencies(pitches) {
 
       if (count === 0) return null;
 
+      const vels = typePitches
+        .map((p) => p.speed || p.velocity || 0)
+        .filter((v) => v > 0);
+
       const strikes = typePitches.filter(
         (p) =>
           p.result.includes("Strike") ||
@@ -384,16 +388,11 @@ function calculateTendencies(pitches) {
           p.result === "In-Play",
       ).length;
 
-      const velocities = typePitches
-        .map((p) => p.velocity)
-        .filter((v) => v > 0);
       const avgV =
-        velocities.length > 0
-          ? (velocities.reduce((a, b) => a + b, 0) / velocities.length).toFixed(
-              1,
-            )
+        vels.length > 0
+          ? (vels.reduce((a, b) => a + b, 0) / vels.length).toFixed(1)
           : "-";
-      const maxV = velocities.length > 0 ? Math.max(...velocities) : "-";
+      const maxV = vels.length > 0 ? Math.max(...vels) : "-";
       const sPct = ((strikes / count) * 100).toFixed(1);
 
       return { label: labels[type], count, avgV, maxV, sPct };
