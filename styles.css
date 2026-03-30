@@ -702,25 +702,27 @@ input[type="range"]::-webkit-slider-thumb {
   background: #0a0a0a;
   width: 100%;
   max-width: 600px;
-  margin: 0 auto;
-  border: none;
-  padding: 0; /* Remove default padding to use our own layout */
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  margin: 20px auto; /* Centers the card on screen */
+  padding: 0; /* Remove padding here so the header can be truly sticky to the edges */
+  max-height: 85vh;
+  display: block;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth iPad scrolling */
+  border-radius: 12px;
+  border: 1px solid #222;
 }
 
-/* Header styling */
+/* 2. The Sticky Header */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #333;
-  margin-bottom: 20px;
-  background: #111;
-  flex-shrink: 0;
+  background: #0a0a0a;
+  border-bottom: 1px solid #222;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .close-btn {
@@ -759,6 +761,15 @@ input[type="range"]::-webkit-slider-thumb {
 
 .stats-hero-container {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* 3. The Responsive Table Wrapper */
+.tendency-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 25px;
+  padding: 0 20px; /* Moves the padding from the modal-content to the internal items */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Big Hero Cards */
@@ -833,6 +844,12 @@ input[type="range"]::-webkit-slider-thumb {
   background-repeat: no-repeat;
   background-position: right 12px center;
   min-height: 44px;
+}
+
+.filter-ribbon,
+.stats-main-view,
+.mini-games-list {
+  padding: 0 20px;
 }
 
 .btn-update-stats {
