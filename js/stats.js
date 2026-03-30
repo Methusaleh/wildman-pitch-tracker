@@ -155,7 +155,7 @@ function processAndRenderStats(games, pitches) {
   const firstPitches = activePitches.filter((p) => {
     if (!p.countBefore) return false;
     // Strip all spaces so "0-0", "0 - 0", etc. all match "0-0"
-    return p.countBefore.replace(/\s+/g, "") === "0-0";
+    return p.countBefore.toString().replace(/\s+/g, "") === "0-0";
   });
 
   const totalAtBats = firstPitches.length;

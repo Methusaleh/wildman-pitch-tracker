@@ -114,18 +114,23 @@ document.getElementById("strike-zone").addEventListener("click", (e) => {
 });
 
 function recordPitch(result) {
+  // 1. Gatekeeper: Ensure pitcher is selected
   if (gameState.pitcherName === "Select Pitcher") {
     openPitcherPicker();
     return;
   }
 
-  if (!gameState.lastTap && result !== "HBP")
+  // 2. Gatekeeper: Ensure zone was tapped (except for HBP)
+  if (!gameState.lastTap && result !== "HBP") {
     return alert("Tap the zone first!");
+  }
 
+  // 3. Handle In-Play Overlay
   if (result === "In-Play") {
     document.getElementById("hit-overlay").style.display = "flex";
     return;
   }
+
   finishRecording(result);
 }
 
@@ -135,18 +140,20 @@ function submitHit(direction) {
 }
 
 function finishRecording(result, direction = null) {
-  const speed = document.getElementById("pitch-speed").value;
+  const speedInput = document.getElementById("pitch-speed");
+  const speedValue = parseInt(speedInput.value) || 0;
+
   const newPitch = {
     x: gameState.lastTap?.x || 50,
     y: gameState.lastTap?.y || 50,
-    type: gameState.currentPitchType,
-    speed: parseInt(speed),
-    velocity: parseInt(speed),
-    result,
-    direction,
+    type: gameState.currentPitchType || "FB",
+    speed: speedValue,
+    velocity: speedValue,
+    result: result,
+    direction: direction,
     countBefore: `${gameState.balls}-${gameState.strikes}`,
     timestamp: Date.now(),
-    game_id: gamestate.gameId,
+    game_id: gameState.gameId, // Use game_id to match stats.js filters
   };
 
   gameState.sessionPitches.push(newPitch);
@@ -159,7 +166,7 @@ function finishRecording(result, direction = null) {
     currentPing.style.animation = "none";
   }
 
-  WildmanEngine.updateCount(result); // In engine.js
+  WildmanEngine.updateCount(result);
   resetStrikeButtons();
   saveToLocal();
   gameState.lastTap = null;
@@ -322,6 +329,8 @@ function confirmSetup() {
   gameState.awayTeam = a;
   gameState.pitcherTeam = pt;
   gameState.location = document.getElementById("location-input").value;
+
+  // Ensure this matches the key stats.js looks for (p.game_id)
   gameState.gameId = "game-" + Date.now();
 
   document.getElementById("setup-screen").style.display = "none";

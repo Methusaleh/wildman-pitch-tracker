@@ -175,6 +175,12 @@ function openPitcherPicker() {
     .join("");
 }
 
+function switchPitcher() {
+  clearZoneUI();
+  // Open the new selection overlay instead of the old prompt
+  openPitcherPicker();
+}
+
 function selectPitcherFromMenu(id) {
   const roster = JSON.parse(localStorage.getItem("wildmanRoster")) || [];
   const p = roster.find((pitcher) => pitcher.id === id);
