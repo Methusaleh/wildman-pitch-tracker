@@ -55,9 +55,8 @@ function populateFilterDropdowns() {
 
   const pSelect = document.getElementById("filter-pitcher");
   const tSelect = document.getElementById("filter-team");
-  if (!pSelect || !tSelect || !rawStatsData.games) return;
+  if (!pSelect || !tSelect) return;
 
-  // Use || to catch both 'pitcher_name' (DB) and 'pitcherName' (Local)
   const pitchers = [
     ...new Set(rawStatsData.games.map((g) => g.pitcher_name || g.pitcherName)),
   ].filter(Boolean);
@@ -70,8 +69,14 @@ function populateFilterDropdowns() {
     ),
   ].filter(Boolean);
 
+  // 1. ADD "LIVE SESSION" OPTION IF ACTIVE
+  let pOptions = `<option value="all">All Pitchers</option>`;
+  if (gameState.sessionPitches.length > 0) {
+    pOptions += `<option value="LIVE_SESSION">🔴 LIVE SESSION (${gameState.pitcherName})</option>`;
+  }
+
   pSelect.innerHTML =
-    `<option value="all">All Pitchers</option>` +
+    pOptions +
     pitchers.map((p) => `<option value="${p}">${p}</option>`).join("");
 
   tSelect.innerHTML =
@@ -81,6 +86,27 @@ function populateFilterDropdowns() {
 
 function applyFilters() {
   const selectedP = document.getElementById("filter-pitcher").value;
+
+  // 1. INTERCEPT LIVE SESSION
+  if (selectedP === "LIVE_SESSION") {
+    const liveGame = {
+      id: gameState.gameId,
+      pitcher_name: gameState.pitcherName,
+      away_team: gameState.awayTeam,
+      home_team: gameState.homeTeam,
+      played_at: new Date().toISOString(),
+    };
+
+    // Hide the game picker if it was open from a previous historical search
+    const picker = document.getElementById("specific-game-picker");
+    if (picker) picker.style.display = "none";
+
+    // Render ONLY the local game and local pitches
+    processAndRenderStats([liveGame], gameState.sessionPitches);
+    return; // Exit here so we don't run the historical filter
+  }
+
+  // 2. STANDARD HISTORICAL FILTER (Your original logic)
   const selectedT = document.getElementById("filter-team").value;
   const radioMatch = document.querySelector('input[name="timespan"]:checked');
   const span = radioMatch ? radioMatch.value : "all";
@@ -88,7 +114,9 @@ function applyFilters() {
 
   let filteredGames = rawStatsData.games.filter((game) => {
     const gameDate = new Date(game.played_at);
-    const matchP = selectedP === "all" || game.pitcher_name === selectedP;
+    const matchP =
+      selectedP === "all" ||
+      (game.pitcher_name || game.pitcherName) === selectedP;
     const matchT =
       selectedT === "all" ||
       game.pitcher_team === selectedT ||
@@ -117,11 +145,9 @@ function applyFilters() {
     return matchP && matchT && matchTime;
   });
 
-  // SPECIAL: If searching for a "Single Game" and we have a week selected
   if (span === "single" && selectedSub) {
     showGamePicker(filteredGames);
   } else {
-    // Remove game picker if not in "single" mode
     const picker = document.getElementById("specific-game-picker");
     if (picker) picker.style.display = "none";
     processAndRenderStats(filteredGames, rawStatsData.pitches);

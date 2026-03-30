@@ -1,0 +1,2745 @@
+]633;E;for f in index.html styles.css app.js js/*.js\x3b do echo "--- FILE: $f ---"\x3b cat "$f"\x3b echo -e "\\n"\x3b done > project_dump.txt;9a6abc44-0e76-4a21-88ca-b496f745bdd4]633;C--- FILE: index.html ---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Wildman Pitch Tracker</title>
+  </head>
+  <body>
+    <div id="splash-screen" class="full-screen-overlay">
+      <div class="splash-content">
+        <h1 class="wildman-logo">WILDMAN</h1>
+        <p class="tracker-subtext">PITCH TRACKER</p>
+        <div class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="home-screen" class="full-screen-overlay" style="display: none">
+      <div class="main-menu">
+        <h1 class="wildman-logo">WILDMAN</h1>
+        <div class="menu-options">
+          <button class="btn-menu" onclick="showSetupScreen()">
+            ⚾ NEW GAME
+          </button>
+          <button class="btn-menu" onclick="openStats()">📊 VIEW STATS</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="setup-screen" class="full-screen-overlay" style="display: none">
+      <div class="setup-card">
+        <h2 class="setup-title">GAME SETUP</h2>
+
+        <div class="setup-group">
+          <label>AWAY TEAM</label>
+          <input
+            type="text"
+            id="away-team-input"
+            list="team-history"
+            placeholder="Visitor Name"
+          />
+        </div>
+
+        <div class="setup-group">
+          <label>HOME TEAM</label>
+          <input
+            type="text"
+            id="home-team-input"
+            list="team-history"
+            placeholder="Home Name"
+          />
+        </div>
+
+        <div class="setup-group">
+          <label>LOCATION</label>
+          <input type="text" id="location-input" placeholder="Field Name" />
+        </div>
+
+        <div class="setup-group">
+          <label>PITCHER'S TEAM (FOR STATS)</label>
+          <input
+            type="text"
+            id="pitcher-team-input"
+            placeholder="Ex: Piedmont Wildcats"
+          />
+        </div>
+
+        <datalist id="team-history"></datalist>
+        <button class="btn-start-game" onclick="confirmSetup()">
+          START TRACKER
+        </button>
+        <button class="btn-secondary" onclick="showHomeScreen()">BACK</button>
+      </div>
+    </div>
+
+    <div id="app" style="display: none">
+      <header class="app-header">
+        <div class="header-side header-left">
+          <h2
+            id="current-pitcher"
+            onclick="openPitcherPicker()"
+            style="cursor: pointer"
+          >
+            Select Pitcher
+          </h2>
+
+          <div class="game-status-row">
+            <span
+              onpointerdown="startInningTimer()"
+              onpointerup="stopInningTimer()"
+              onpointerleave="stopInningTimer()"
+              style="
+                cursor: pointer;
+                padding: 5px;
+                user-select: none;
+                -webkit-user-select: none;
+              "
+            >
+              INN <b id="display-inning">1</b>
+            </span>
+            <span style="margin: 0 5px; opacity: 0.3">|</span>
+            <span
+              onclick="
+                event.stopPropagation();
+                adjustOuts(1);
+              "
+              style="cursor: pointer; padding: 5px"
+            >
+              <b id="display-outs">0</b> OUTS
+            </span>
+          </div>
+        </div>
+
+        <div class="header-center">
+          <div class="score-box" onclick="adjustScore('away', 1)">
+            <label id="label-away">AWAY</label>
+            <span id="score-away">0</span>
+          </div>
+          <div class="score-divider">VS</div>
+          <div class="score-box" onclick="adjustScore('home', 1)">
+            <label id="label-home">HOME</label>
+            <span id="score-home">0</span>
+          </div>
+        </div>
+
+        <div class="header-side header-right">
+          <div class="count" id="main-count">0 - 0</div>
+          <div class="total-pitches">P: <span id="pitch-total">0</span></div>
+        </div>
+      </header>
+
+      <div class="timer-bar">
+        <span id="timer-display">00:00:00</span>
+        <div class="timer-btns">
+          <button id="timer-toggle-btn" onclick="toggleTimer()">START</button>
+          <button onclick="resetTimer()">RESET</button>
+        </div>
+      </div>
+
+      <main class="main-layout">
+        <section class="zone-container">
+          <div id="strike-zone" class="strike-zone">
+            <div class="inner-plate"></div>
+          </div>
+        </section>
+
+        <section class="controls">
+          <div class="pitch-type-grid">
+            <button
+              class="type-chip active"
+              id="type-FB"
+              onclick="setPitchType('FB')"
+            >
+              FASTBALL
+            </button>
+            <button class="type-chip" id="type-BR" onclick="setPitchType('BR')">
+              BREAKING
+            </button>
+            <button class="type-chip" id="type-CH" onclick="setPitchType('CH')">
+              CHANGEUP
+            </button>
+          </div>
+
+          <div class="velocity-control">
+            <div class="velo-header">
+              <label>VELOCITY</label>
+              <div class="velo-display">
+                <span id="velo-number">75</span> <small>MPH</small>
+              </div>
+            </div>
+            <div class="slider-row">
+              <button class="btn-step" onclick="stepVelo(-1)">−</button>
+              <input
+                type="range"
+                id="pitch-speed"
+                min="40"
+                max="105"
+                value="75"
+                oninput="updateVeloDisplay(this.value)"
+              />
+              <button class="btn-step" onclick="stepVelo(1)">+</button>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button class="btn btn-ball" onclick="recordPitch('Ball')">
+              BALL
+            </button>
+            <div class="strike-wrap">
+              <button
+                id="btn-strike-main"
+                class="btn btn-strike"
+                onclick="showStrikeSplit()"
+              >
+                STRIKE
+              </button>
+              <div id="strike-split" style="display: none; gap: 5px">
+                <button
+                  class="btn btn-strike-sub"
+                  onclick="recordPitch('Strike Looking')"
+                >
+                  LOOK
+                </button>
+                <button
+                  class="btn btn-strike-sub"
+                  onclick="recordPitch('Strike Swinging')"
+                >
+                  SWING
+                </button>
+              </div>
+            </div>
+            <button class="btn btn-foul" onclick="recordPitch('Foul')">
+              FOUL
+            </button>
+            <button class="btn btn-inplay" onclick="recordPitch('In-Play')">
+              IN PLAY
+            </button>
+            <button class="btn btn-hbp" onclick="recordPitch('HBP')">
+              HBP
+            </button>
+            <button class="btn btn-undo" onclick="undoLastPitch()">
+              UNDO LAST PITCH
+            </button>
+          </div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav">
+        <button onclick="switchPitcher()">Swap Pitcher</button>
+        <button onclick="openStats()">Stats</button>
+        <button onclick="endGame()">End Game</button>
+      </nav>
+    </div>
+
+    <div id="pitcher-modal" class="modal">
+      <div class="modal-content" style="max-width: 400px; padding: 30px">
+        <h3
+          style="
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #888;
+            font-size: 1rem;
+            letter-spacing: 1px;
+          "
+        >
+          ADD NEW PITCHER
+        </h3>
+
+        <input
+          type="text"
+          id="new-p-first"
+          placeholder="First Name"
+          class="setup-group-input"
+        />
+        <input
+          type="text"
+          id="new-p-last"
+          placeholder="Last Name"
+          class="setup-group-input"
+        />
+
+        <label
+          style="
+            display: block;
+            font-size: 0.6rem;
+            color: #555;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+          "
+          >Throwing Hand</label
+        >
+        <div class="hand-picker">
+          <button
+            class="btn-hand active"
+            id="btn-right"
+            onclick="selectHand('R')"
+          >
+            RIGHTY
+          </button>
+          <button class="btn-hand" id="btn-left" onclick="selectHand('L')">
+            LEFTY
+          </button>
+        </div>
+
+        <button
+          class="btn-start-game"
+          onclick="saveNewPitcher()"
+          style="margin-top: 10px"
+        >
+          SAVE PITCHER
+        </button>
+        <button class="btn-secondary" onclick="closePitcherModal()">
+          CANCEL
+        </button>
+      </div>
+    </div>
+
+    <div id="hit-overlay" class="modal">
+      <div class="hit-picker">
+        <h3>WHERE WAS THE HIT?</h3>
+        <div class="hit-buttons">
+          <button class="hit-btn btn-left" onclick="submitHit('Left')">
+            LEFT
+          </button>
+          <button class="hit-btn btn-center" onclick="submitHit('Center')">
+            CENTER
+          </button>
+          <button class="hit-btn btn-right" onclick="submitHit('Right')">
+            RIGHT
+          </button>
+        </div>
+        <button
+          onclick="
+            document.getElementById('hit-overlay').style.display = 'none'
+          "
+          class="text-link-cancel"
+        >
+          Nevermind, cancel
+        </button>
+      </div>
+    </div>
+
+    <div id="stats-modal" class="modal">
+      <div class="modal-content">
+        <header class="modal-header">
+          <h2>ANALYTICS</h2>
+          <button onclick="closeStats()" class="close-btn">X</button>
+        </header>
+
+        <div class="filter-ribbon">
+          <div class="filter-row">
+            <select id="filter-pitcher">
+              <option value="all">Pitcher</option>
+            </select>
+            <select id="filter-team">
+              <option value="all">Team</option>
+            </select>
+          </div>
+
+          <div class="time-radio-group">
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="all"
+                checked
+                onchange="updateTimeOptions(this.value)"
+              />
+              ALL</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="month"
+                onchange="updateTimeOptions(this.value)"
+              />
+              MONTH</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="week"
+                onchange="updateTimeOptions(this.value)"
+              />
+              WEEK</label
+            >
+            <label
+              ><input
+                type="radio"
+                name="timespan"
+                value="single"
+                onchange="updateTimeOptions(this.value)"
+              />
+              GAME</label
+            >
+          </div>
+
+          <div id="dynamic-time-container" style="margin-top: 10px">
+            <select
+              id="filter-sub-option"
+              style="display: none"
+              onchange="applyFilters()"
+            ></select>
+            <input
+              type="date"
+              id="filter-date"
+              style="display: none"
+              onchange="applyFilters()"
+            />
+          </div>
+
+          <button class="btn-update-stats" onclick="applyFilters()">
+            UPDATE ANALYTICS
+          </button>
+        </div>
+
+        <div id="stats-display" class="stats-main-view"></div>
+
+        <div id="recent-games-footer" class="mini-games-list"></div>
+      </div>
+    </div>
+
+    <div id="pitcher-picker-modal" class="modal">
+      <div
+        class="modal-content"
+        style="
+          max-width: 400px;
+          padding: 20px;
+          border-radius: 20px;
+          border: 1px solid #333;
+          background: #0a0a0a;
+        "
+      >
+        <header
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          "
+        >
+          <h2
+            style="
+              font-size: 1.1rem;
+              color: #888;
+              letter-spacing: 1px;
+              margin: 0;
+            "
+          >
+            SELECT PITCHER
+          </h2>
+          <button
+            onclick="closePitcherPicker()"
+            class="close-btn"
+            style="background: #222; border-radius: 50%; padding: 8px 12px"
+          >
+            X
+          </button>
+        </header>
+
+        <div
+          id="pitcher-list-container"
+          style="max-height: 350px; overflow-y: auto; margin-bottom: 20px"
+        ></div>
+
+        <button
+          onclick="openNewPitcherForm()"
+          style="
+            width: 100%;
+            padding: 18px;
+            background: #1a1a1a;
+            color: var(--strike);
+            border: 1px solid #333;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+          "
+        >
+          + ADD NEW PITCHER
+        </button>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="app.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then(() => console.log("Wildman Offline Mode: Active"))
+            .catch((err) => console.log("Offline mode failed:", err));
+        });
+      }
+    </script>
+  </body>
+</html>
+
+
+--- FILE: styles.css ---
+:root {
+  --bg-color: #0a0a0a;
+  --card-bg: #1e1e1e;
+  --text: #ffffff;
+  --ball: #f44336;
+  --strike: #4caf50;
+  --foul: #9c27b0;
+  --accent: #2196f3;
+}
+
+* {
+  box-sizing: border-box;
+}
+body,
+html {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.full-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.wildman-logo {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--accent);
+  margin: 0;
+}
+.tracker-subtext {
+  letter-spacing: 10px;
+  color: #555;
+  margin-top: -5px;
+  font-size: 0.9rem;
+}
+.loading-bar-container {
+  width: 180px;
+  height: 4px;
+  background: #222;
+  margin-top: 25px;
+  border-radius: 2px;
+}
+.loading-bar {
+  width: 0%;
+  height: 100%;
+  background: var(--accent);
+  animation: loadProgress 2s forwards;
+}
+@keyframes loadProgress {
+  to {
+    width: 100%;
+  }
+}
+
+.menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 30px;
+  width: 280px;
+}
+.btn-menu {
+  padding: 22px;
+  background: var(--card-bg);
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.setup-card {
+  background: var(--card-bg);
+  width: 92%;
+  max-width: 450px;
+  padding: 25px;
+  border-radius: 20px;
+  border: 1px solid #333;
+  text-align: center;
+}
+.setup-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+.setup-group label {
+  display: block;
+  font-size: 0.7rem;
+  color: #888;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+.setup-group input,
+.setup-group-input {
+  width: 100%;
+  padding: 14px;
+  background: #121212;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 10px;
+}
+
+.pitch-type-grid {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.type-chip {
+  flex: 1;
+  padding: 14px 2px;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 10px;
+  color: #666;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+#type-FB.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(33, 150, 243, 0.1);
+}
+#type-BR.active {
+  border-color: #e91e63;
+  color: #e91e63;
+  background: rgba(233, 30, 99, 0.1);
+}
+#type-CH.active {
+  border-color: #ff9800;
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.1);
+}
+
+.velocity-control {
+  background: #1a1a1a;
+  padding: 10px 15px;
+  border-radius: 15px;
+  border: 1px solid #333;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.velo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.velo-display {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text);
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-step {
+  width: 42px;
+  height: 42px;
+  background: #333;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  background: #333;
+  height: 6px;
+  border-radius: 5px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 32px;
+  width: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding-top: env(safe-area-inset-top);
+}
+/* --- Header Layout --- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 10px 15px 15px 15px;
+  background: var(--card-bg);
+  border-bottom: 1px solid #333;
+  min-height: 100px;
+}
+
+.header-side {
+  flex: 1;
+}
+.header-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* The Center Scoreboard */
+.header-center {
+  flex: 1.5;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 15px;
+  padding-bottom: 5px;
+}
+
+.score-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  min-width: 60px;
+}
+
+.score-box label {
+  font-size: 0.65rem;
+  color: #666;
+  font-weight: 900;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  max-width: 80px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.score-box span {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.score-divider {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: #333;
+  padding-bottom: 5px;
+}
+
+/* --- New: Timer Bar Styling --- */
+.timer-bar {
+  background: #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 20px;
+  border-bottom: 1px solid #222;
+}
+
+#timer-display {
+  font-family: monospace;
+  font-size: 1.2rem;
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.timer-btns button {
+  background: #222;
+  border: 1px solid #444;
+  color: #888;
+  font-size: 0.7rem;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-left: 5px;
+  font-weight: bold;
+}
+
+.pitcher-info h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: var(--accent);
+}
+
+.game-status-row {
+  font-size: 1rem;
+  color: #888;
+  margin-top: 5px;
+  font-weight: bold;
+}
+
+.game-status-row b {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+/* --- Scoreboard Right --- */
+.scoreboard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.count {
+  font-size: 2.8rem; /* Huge Count for easy viewing */
+  font-weight: 900;
+  line-height: 0.9;
+  color: var(--text);
+  letter-spacing: -2px;
+}
+
+.total-pitches {
+  font-size: 1rem;
+  color: #666;
+  margin-top: 5px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+#pitch-total {
+  color: var(--accent);
+}
+.main-layout {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  overflow: hidden;
+}
+@media (orientation: landscape) {
+  /* 1. Side-by-side with 50/50 split */
+  .main-layout {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center; /* Centers both items vertically */
+    gap: 40px; /* Big gap so it doesn't feel cramped */
+    padding: 10px 40px;
+    overflow: hidden; /* Prevents the footer overlap */
+  }
+
+  /* 2. Fix the Zone's shape */
+  .strike-zone {
+    flex: 1; /* Takes half the width */
+    height: 60vh; /* Limits height so it doesn't push off screen */
+    width: auto;
+    max-width: 400px;
+    aspect-ratio: 4/5; /* This FORCES it to be the right baseball shape */
+    margin: 0;
+  }
+
+  /* 3. Fix the Controls Block */
+  .controls {
+    flex: 1; /* Takes the other half of the width */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 450px;
+    height: auto;
+  }
+
+  /* 4. Shrink buttons slightly for landscape so they don't hide under the footer */
+  .btn {
+    padding: 12px 5px; /* Thinner buttons in landscape */
+    font-size: 0.85rem;
+  }
+
+  .velocity-control {
+    padding: 8px;
+    margin-bottom: 5px;
+  }
+}
+.strike-zone {
+  position: relative;
+  background: #222;
+  border: 2px solid #444;
+  border-radius: 10px;
+  aspect-ratio: 4/5;
+  height: 45vh;
+}
+.inner-plate {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60%;
+  height: 70%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.strike-wrap {
+  grid-column: span 1;
+  position: relative;
+}
+#strike-split {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  height: 100%;
+}
+.btn {
+  width: 100%;
+  padding: 18px 5px;
+  border-radius: 12px;
+  border: none;
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+.btn-ball {
+  background: var(--ball);
+}
+.btn-strike {
+  background: var(--strike);
+}
+.btn-strike-sub {
+  background: #2e7d32;
+  font-size: 0.75rem;
+}
+.btn-foul {
+  background: var(--foul);
+}
+.btn-inplay {
+  background: var(--accent);
+}
+.btn-hbp {
+  background: #ff5722;
+  grid-column: span 2;
+  padding: 12px;
+  margin-top: 2px;
+}
+.btn-undo {
+  grid-column: span 2; /* Takes up the full width at the bottom of the grid */
+  background: #333; /* Dark gray */
+  color: #888; /* Dimmed text */
+  border: 1px solid #444;
+  margin-top: 10px;
+  padding: 12px !important;
+  font-size: 0.8rem !important;
+}
+
+.btn-undo:active {
+  background: #ff5252; /* Flashes red when pressed to confirm it worked */
+  color: white;
+}
+
+.ping {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+.temp-ping {
+  background-color: #ffeb3b !important;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 15px #ffeb3b;
+  animation: pulse 1s infinite;
+  z-index: 101;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 6000;
+  align-items: center;
+  justify-content: center;
+}
+.hit-picker {
+  background: var(--card-bg);
+  padding: 25px;
+  border-radius: 20px;
+  width: 92%;
+  max-width: 480px;
+  text-align: center;
+  border: 1px solid #444;
+}
+.hit-btn {
+  flex: 1;
+  padding: 35px 5px;
+  border-radius: 12px;
+  border: none;
+  color: white;
+  font-weight: 900;
+  font-size: 1rem;
+}
+.btn-left {
+  background: linear-gradient(135deg, #ffc107, #ff9800);
+}
+.btn-center {
+  background: linear-gradient(135deg, #2196f3, #1565c0);
+}
+.btn-right {
+  background: linear-gradient(135deg, #8bc34a, #4caf50);
+}
+.text-link-cancel {
+  background: none;
+  border: none;
+  color: #ff5252;
+  font-weight: bold;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.btn-start-game {
+  width: 100%;
+  padding: 22px;
+  background: var(--strike);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-top: 15px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.btn-start-game:active {
+  transform: scale(0.98);
+  background: #45a049; /* Slightly darker green when pressed */
+}
+.bottom-nav {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: var(--card-bg);
+  border-top: 1px solid #333;
+}
+.bottom-nav button {
+  flex: 1;
+  padding: 14px;
+  background: #333;
+  color: var(--accent);
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-secondary {
+  background: none;
+  color: #666;
+  border: none;
+  padding: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.hand-picker {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.btn-hand {
+  flex: 1;
+  padding: 12px;
+  background: #333;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  color: #888;
+  font-weight: bold;
+}
+.btn-hand.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(33, 150, 243, 0.1);
+}
+
+/* Stats Dashboard Styles */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two cards per row */
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.stat-card label {
+  display: block;
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  font-weight: 800;
+  margin-bottom: 5px;
+}
+
+.stat-card span {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+.game-log-container,
+#stats-display > div[style*="grid-column"] {
+  grid-column: span 2;
+  width: 100%;
+}
+
+.game-row {
+  background: #222;
+  margin-bottom: 10px;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-left: 4px solid var(--accent);
+  border: 1px solid #333;
+}
+
+.game-info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.game-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.btn-report-copy {
+  background: #333;
+  border: none;
+  color: var(--strike);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+
+/* Ensure the modal covers the whole screen */
+#stats-modal.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000; /* Pure black background to hide the app */
+  z-index: 9999;
+  overflow-y: auto; /* Allow scrolling if there are many games */
+  padding: 20px 10px;
+}
+
+/* Make the content box look like a dashboard */
+#stats-modal .modal-content {
+  background: #0a0a0a;
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto; /* Centers the card on screen */
+  padding: 0; /* Remove padding here so the header can be truly sticky to the edges */
+  max-height: 85vh;
+  display: block;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth iPad scrolling */
+  border-radius: 12px;
+  border: 1px solid #222;
+}
+
+/* 2. The Sticky Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: #0a0a0a;
+  border-bottom: 1px solid #222;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.close-btn {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 50%;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Style the Stats Filter Selects */
+.filter-section select {
+  appearance: none; /* Removes default arrow */
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px !important;
+}
+
+.filter-section select:focus {
+  border-color: var(--accent) !important;
+  outline: none;
+}
+
+.filter-section {
+  padding: 15px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0; /* Keep filters visible at all times */
+}
+
+/* --- ANALYTICS DASHBOARD --- */
+
+.stats-hero-container {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* 3. The Responsive Table Wrapper */
+.tendency-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-bottom: 25px;
+  padding: 0 20px; /* Moves the padding from the modal-content to the internal items */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Big Hero Cards */
+.hero-card {
+  background: linear-gradient(145deg, #1a1a1a, #111);
+  border: 1px solid #333;
+  padding: 20px 10px;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.hero-card label {
+  display: block;
+  font-size: 0.65rem;
+  color: #888;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.hero-card span {
+  font-family: "Courier New", Courier, monospace; /* Digital look */
+  font-weight: 800;
+  display: block;
+}
+
+/* Mini Game Rows */
+.mini-game-row {
+  transition: transform 0.1s active;
+}
+
+.mini-game-row:active {
+  transform: scale(0.98);
+  background: #222 !important;
+}
+
+.game-meta h4 {
+  letter-spacing: 0.5px;
+}
+
+/* Filter Ribbon Styling */
+.filter-ribbon {
+  background: #111;
+  padding: 20px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-row select,
+#filter-sub-option,
+#filter-date {
+  flex: 1;
+  padding: 12px;
+  background: #000;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  min-height: 44px;
+}
+
+.filter-ribbon,
+.stats-main-view,
+.mini-games-list {
+  padding: 0 20px;
+}
+
+.btn-update-stats {
+  width: 100%;
+  padding: 15px;
+  background: var(--text);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.btn-update-stats:active {
+  transform: scale(0.98);
+  opacity: 0.8;
+}
+
+.time-radio-group {
+  display: flex;
+  background: #000;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+
+.time-radio-group label {
+  flex: 1;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #555;
+  padding: 10px 0;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.time-radio-group input[type="radio"] {
+  display: none; /* Hide the actual dot */
+}
+
+.time-radio-group label:has(input:checked) {
+  background: var(--accent);
+  color: #000;
+  border-radius: 7px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Styling for the dynamic game picker */
+#specific-game-picker {
+  width: 100%;
+  padding: 12px;
+  background: #000;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23666'%3E%3Cpath d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  margin-top: 10px;
+  outline: none;
+}
+
+#specific-game-picker:focus {
+  border-color: var(--accent);
+}
+
+/* Add space between inputs in the pitcher modals */
+#pitcher-modal .setup-group-input {
+  margin-bottom: 15px;
+  display: block; /* Ensures they stack correctly with the margin */
+}
+
+/* Add space between the last name and the hand picker buttons */
+#pitcher-modal .hand-picker {
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+/* Ensure the 'Cancel' link isn't stuck to the bottom of the Save button */
+#pitcher-modal .btn-secondary {
+  margin-top: 15px;
+  display: block;
+  width: 100%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+#stats-modal .modal-content::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+#stats-modal .modal-content {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Optional: Adds a subtle fade at the bottom to hint at more content */
+#stats-modal .modal-content {
+  mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
+}
+
+
+--- FILE: app.js ---
+/**
+ * WILDMAN PITCH TRACKER - CONTROLLER
+ * Focus: Global State, Initialization, and Primary Event Routing
+ */
+
+let gameState = {
+  pitcherName: "Select Pitcher",
+  pitcherHand: "R",
+  pitcherTeam: "", // Added to ensure DB save works
+  homeTeam: "",
+  awayTeam: "",
+  location: "",
+  balls: 0,
+  strikes: 0,
+  outs: 0,
+  inning: 1,
+  totalPitches: 0,
+  homeScore: 0,
+  awayScore: 0,
+  timerSeconds: 0,
+  timerActive: false,
+  sessionPitches: [],
+  activeAtBatPitches: [],
+  currentPitchType: "FB",
+  lastTap: null,
+};
+
+let rawStatsData = { games: [], pitches: [] };
+let selectedHand = "R";
+let timerInterval;
+
+// --- INITIALIZATION ---
+window.addEventListener("DOMContentLoaded", () => {
+  loadGame();
+  setTimeout(() => {
+    document.getElementById("splash-screen").style.opacity = "0";
+    setTimeout(() => {
+      document.getElementById("splash-screen").style.display = "none";
+      if (!localStorage.getItem("currentPitchTrackerGame")) showHomeScreen();
+    }, 500);
+  }, 2500);
+});
+
+// --- TIMER LOGIC ---
+function toggleTimer() {
+  const btn = document.getElementById("timer-toggle-btn");
+  if (gameState.timerActive) {
+    clearInterval(timerInterval);
+    gameState.timerActive = false;
+    btn.innerText = "START";
+    btn.style.background = "#222";
+  } else {
+    gameState.timerActive = true;
+    btn.innerText = "PAUSE";
+    btn.style.background = "#f44336";
+    timerInterval = setInterval(() => {
+      gameState.timerSeconds++;
+      updateTimerDisplay();
+      saveToLocal();
+    }, 1000);
+  }
+  saveToLocal();
+}
+
+function updateTimerDisplay() {
+  const h = Math.floor(gameState.timerSeconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((gameState.timerSeconds % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = (gameState.timerSeconds % 60).toString().padStart(2, "0");
+  const el = document.getElementById("timer-display");
+  if (el) el.innerText = `${h}:${m}:${s}`;
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  gameState.timerSeconds = 0;
+  gameState.timerActive = false;
+  const btn = document.getElementById("timer-toggle-btn");
+  if (btn) btn.innerText = "START";
+  updateTimerDisplay();
+}
+
+// --- PITCH RECORDING ---
+function setPitchType(type) {
+  console.log("Switching to pitch type:", type); // Add this to debug!
+  gameState.currentPitchType = type;
+
+  document
+    .querySelectorAll(".type-chip")
+    .forEach((chip) => chip.classList.remove("active"));
+  const btn = document.getElementById(`type-${type}`);
+  if (btn) btn.classList.add("active");
+
+  saveToLocal(); // Ensure this is saved immediately
+}
+
+function showStrikeSplit() {
+  document.getElementById("btn-strike-main").style.display = "none";
+  document.getElementById("strike-split").style.display = "flex";
+}
+
+function resetStrikeButtons() {
+  document.getElementById("btn-strike-main").style.display = "block";
+  document.getElementById("strike-split").style.display = "none";
+}
+
+// Click listener for the Strike Zone
+document.getElementById("strike-zone").addEventListener("click", (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * 100;
+  const y = ((e.clientY - rect.top) / rect.height) * 100;
+  if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+    placePing(x, y); // In ui.js
+    gameState.lastTap = { x: x.toFixed(2), y: y.toFixed(2) };
+  }
+});
+
+function recordPitch(result) {
+  // 1. Gatekeeper: Ensure pitcher is selected
+  if (gameState.pitcherName === "Select Pitcher") {
+    openPitcherPicker();
+    return;
+  }
+
+  // 2. Gatekeeper: Ensure zone was tapped (except for HBP)
+  if (!gameState.lastTap && result !== "HBP") {
+    return alert("Tap the zone first!");
+  }
+
+  // 3. Handle In-Play Overlay
+  if (result === "In-Play") {
+    document.getElementById("hit-overlay").style.display = "flex";
+    return;
+  }
+
+  finishRecording(result);
+}
+
+function submitHit(direction) {
+  document.getElementById("hit-overlay").style.display = "none";
+  finishRecording("In-Play", direction);
+}
+
+function finishRecording(result, direction = null) {
+  const speedInput = document.getElementById("pitch-speed");
+  const speedValue = parseInt(speedInput.value) || 0;
+
+  const newPitch = {
+    x: gameState.lastTap?.x || 50,
+    y: gameState.lastTap?.y || 50,
+    type: gameState.currentPitchType || "FB",
+    pitchType: gameState.currentPitchType || "FB",
+    speed: speedValue,
+    velocity: speedValue,
+    result: result,
+    direction: direction,
+    countBefore: gameState.balls + "-" + gameState.strikes,
+    timestamp: Date.now(),
+    game_id: gameState.gameId, // Use game_id to match stats.js filters
+  };
+
+  gameState.sessionPitches.push(newPitch);
+  gameState.activeAtBatPitches.push(newPitch);
+
+  const currentPing = document.querySelector(".temp-ping");
+  if (currentPing) {
+    currentPing.classList.remove("temp-ping");
+    currentPing.style.backgroundColor = getPitchColor(result);
+    currentPing.style.animation = "none";
+  }
+
+  WildmanEngine.updateCount(result);
+  resetStrikeButtons();
+  saveToLocal();
+  gameState.lastTap = null;
+}
+
+function getPitchColor(result) {
+  if (result.includes("Strike")) return "#4caf50";
+  if (result === "Ball" || result === "HBP") return "#f44336";
+  if (result === "Foul") return "#9c27b0";
+  if (result === "In-Play") return "#2196f3";
+  return "#ffffff";
+}
+
+function undoLastPitch() {
+  if (gameState.sessionPitches.length === 0) return;
+
+  // 1. Remove the last recorded pitch from both arrays
+  gameState.sessionPitches.pop();
+  gameState.activeAtBatPitches.pop(); // CRITICAL: Remove from current batter view too
+
+  // 2. Wipe the visual pings
+  clearZoneUI();
+
+  // 3. Let the engine reset the math (balls, strikes, total)
+  WildmanEngine.reprocessHistory();
+
+  // 4. REDRAW the pings that are left in activeAtBatPitches
+  (gameState.activeAtBatPitches || []).forEach((p) => {
+    const ping = document.createElement("div");
+    ping.className = "ping";
+    ping.style.left = p.x + "%";
+    ping.style.top = p.y + "%";
+    ping.style.backgroundColor = getPitchColor(p.result);
+    document.getElementById("strike-zone").appendChild(ping);
+  });
+
+  saveToLocal();
+  resetStrikeButtons();
+}
+
+// --- GAME ACTIONS ---
+function adjustOuts(amt) {
+  gameState.outs += amt;
+  if (gameState.outs > 3) gameState.outs = 0;
+  drawScoreboard();
+  saveToLocal();
+}
+
+function adjustInning(amt) {
+  gameState.inning += amt;
+  if (gameState.inning < 1) gameState.inning = 1;
+  drawScoreboard();
+  saveToLocal();
+}
+
+function adjustScore(team, amt) {
+  if (team === "home") {
+    gameState.homeScore = Math.max(0, gameState.homeScore + amt);
+  } else {
+    gameState.awayScore = Math.max(0, gameState.awayScore + amt);
+  }
+  drawScoreboard();
+  saveToLocal();
+}
+
+function switchPitcher() {
+  // Swapping pitchers usually implies a new session/stamina tracking
+  // We keep history but clear the current batter's view
+  clearZoneUI();
+  promptPitcherName();
+}
+
+// --- PERSISTENCE ---
+function saveToLocal() {
+  localStorage.setItem("currentPitchTrackerGame", JSON.stringify(gameState));
+}
+
+function loadGame() {
+  const saved = localStorage.getItem("currentPitchTrackerGame");
+  if (saved) {
+    gameState = JSON.parse(saved);
+    document.getElementById("app").style.display = "flex";
+    gameState.timerActive = false;
+    drawScoreboard();
+    updateTimerDisplay();
+    setPitchType(gameState.currentPitchType || "FB");
+
+    (gameState.activeAtBatPitches || []).forEach((p) => {
+      const ping = document.createElement("div");
+      ping.className = "ping";
+      ping.style.left = p.x + "%";
+      ping.style.top = p.y + "%";
+      ping.style.backgroundColor = getPitchColor(p.result);
+      document.getElementById("strike-zone").appendChild(ping);
+    });
+  }
+}
+
+function getRoster() {
+  return JSON.parse(localStorage.getItem("wildmanRoster")) || [];
+}
+
+// --- SCREEN FLOW ---
+async function openStats() {
+  const modal = document.getElementById("stats-modal");
+  const display = document.getElementById("stats-display");
+  modal.style.display = "flex";
+
+  // 1. Ensure rawStatsData is a valid object so we don't crash
+  if (!rawStatsData) rawStatsData = { games: [], pitches: [] };
+
+  const isLive = gameState.sessionPitches.length > 0;
+  let liveGame = null;
+
+  if (isLive) {
+    liveGame = {
+      id: gameState.gameId,
+      pitcher_name: gameState.pitcherName,
+      pitcherName: gameState.pitcherName, // Add both naming styles for safety
+      away_team: gameState.awayTeam,
+      home_team: gameState.homeTeam,
+      played_at: new Date().toISOString(),
+      pitcher_team: gameState.pitcherTeam,
+      pitcherTeam: gameState.pitcherTeam,
+      final_score_home: gameState.homeScore,
+      final_score_away: gameState.awayScore,
+    };
+
+    // FORCE local data into the global rawStatsData pool immediately
+    rawStatsData.games = [liveGame];
+    rawStatsData.pitches = [...gameState.sessionPitches];
+
+    // Show the local stats right now
+    populateFilterDropdowns();
+    processAndRenderStats([liveGame], gameState.sessionPitches);
+
+    // Live Badge logic
+    if (!document.getElementById("live-session-badge")) {
+      const liveBadge = document.createElement("div");
+      liveBadge.id = "live-session-badge";
+      liveBadge.innerHTML = `<span style="background:var(--ball); color:white; padding:4px 8px; border-radius:4px; font-size:0.6rem; font-weight:900; margin-left:20px;">LIVE SESSION</span>`;
+      document.querySelector(".modal-header").appendChild(liveBadge);
+    }
+  } else {
+    display.innerHTML =
+      "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
+  }
+
+  // 2. NOW try to bring in the cloud data in the background
+  try {
+    const cloudData = await WildmanAPI.fetchStats();
+    if (cloudData && cloudData.games) {
+      // Add cloud games to our existing live game(s)
+      rawStatsData.games = isLive
+        ? [liveGame, ...cloudData.games]
+        : cloudData.games;
+      rawStatsData.pitches = isLive
+        ? [...gameState.sessionPitches, ...cloudData.pitches]
+        : cloudData.pitches;
+
+      // Re-populate filters so history appears in the dropdowns
+      populateFilterDropdowns();
+
+      // If NOT mid-game, show the default cloud history
+      if (!isLive) applyFilters();
+    }
+  } catch (err) {
+    console.error("Cloud Fetch Failed:", err);
+    // No alert needed, we already showed the live data or an error message
+  }
+}
+
+async function endGame() {
+  if (!confirm("Save game to Wildman Database?")) return;
+
+  // 1. Stop the clock if it's still running
+  if (gameState.timerActive) toggleTimer();
+
+  // 2. Map the data EXACTLY for your Neon DB columns
+  const mappedPitches = gameState.sessionPitches.map((p) => ({
+    game_id: gameState.gameId,
+    pitch_type: p.type || "FB",
+    velocity: parseInt(p.speed || p.velocity || 0),
+    result: p.result,
+    location_x: parseFloat(p.x),
+    location_y: parseFloat(p.y),
+    hit_direction: p.direction || null,
+    timestamp: new Date(p.timestamp).toISOString(),
+    count_before: p.countBefore || "0-0",
+  }));
+
+  const payload = {
+    gameData: {
+      pitcherName: gameState.pitcherName,
+      pitcherTeam: gameState.pitcherTeam,
+      homeTeam: gameState.homeTeam,
+      awayTeam: gameState.awayTeam,
+      final_score_home: gameState.homeScore,
+      final_score_away: gameState.awayScore,
+      game_duration_seconds: gameState.timerSeconds,
+    },
+    pitches: mappedPitches,
+  };
+
+  // 3. The "Smart" Save Logic
+  try {
+    // If browser reports offline immediately, don't even try the fetch
+    if (!navigator.onLine) {
+      throw new Error("Offline Mode");
+    }
+
+    const result = await WildmanAPI.saveGame(payload);
+
+    if (result?.success) {
+      alert("⚾ Saved to Neon Cloud!");
+      cleanupAfterSave();
+    } else {
+      // If the server is up but returned an error (like a DB timeout)
+      throw new Error(result?.error || "Server Error");
+    }
+  } catch (err) {
+    // 4. OFFLINE FALLBACK
+    console.warn("Save failed or offline. Queueing for sync:", err.message);
+
+    saveToSyncQueue(payload);
+
+    alert(
+      "📡 No Internet or Sync Error!\n\nGame saved locally on this iPad. It will upload automatically once you're back on Wi-Fi.",
+    );
+
+    cleanupAfterSave();
+  }
+}
+
+function saveToSyncQueue(payload) {
+  let queue = JSON.parse(localStorage.getItem("wildman_sync_queue") || "[]");
+  queue.push(payload);
+  localStorage.setItem("wildman_sync_queue", JSON.stringify(queue));
+}
+
+function cleanupAfterSave() {
+  localStorage.removeItem("currentPitchTrackerGame");
+  location.reload();
+}
+
+function confirmSetup() {
+  const h = document.getElementById("home-team-input").value;
+  const a = document.getElementById("away-team-input").value;
+  const pt = document.getElementById("pitcher-team-input").value;
+
+  if (!h || !a || !pt) return alert("Fill all fields");
+
+  gameState.homeTeam = h;
+  gameState.awayTeam = a;
+  gameState.pitcherTeam = pt;
+  gameState.location = document.getElementById("location-input").value;
+
+  // Ensure this matches the key stats.js looks for (p.game_id)
+  gameState.gameId = "game-" + Date.now();
+
+  document.getElementById("setup-screen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
+  saveToLocal();
+  drawScoreboard();
+}
+
+
+--- FILE: js/api.js ---
+const WildmanAPI = {
+  async saveGame(payload) {
+    try {
+      const response = await fetch("/api/save-game.js", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        return await response.json();
+      } else {
+        const textError = await response.text();
+        return {
+          success: false,
+          error: "Server sent text: " + textError.substring(0, 50),
+        };
+      }
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  async fetchStats() {
+    const response = await fetch("/api/get-stats.js");
+    if (!response.ok) throw new Error("Cloud sync failed");
+    return await response.json();
+  },
+};
+
+
+--- FILE: js/engine.js ---
+/**
+ * WILDMAN ENGINE MODULE
+ * Handles the logic of the game (Count, Outs, Innings, Undo)
+ */
+const WildmanEngine = {
+  // Process a pitch result and update the game state
+  updateCount(result) {
+    gameState.totalPitches++;
+
+    if (result === "Ball") {
+      gameState.balls++;
+      if (gameState.balls === 4) {
+        this.resetAtBat();
+      }
+    } else if (result.includes("Strike")) {
+      gameState.strikes++;
+      if (gameState.strikes === 3) {
+        gameState.outs++;
+        this.resetAtBat();
+      }
+    } else if (result === "Foul") {
+      if (gameState.strikes < 2) gameState.strikes++;
+    } else if (result === "In-Play" || result === "HBP") {
+      this.resetAtBat();
+    }
+
+    // Three outs reset the out counter
+    if (gameState.outs === 3) {
+      gameState.outs = 0;
+    }
+
+    // Global UI updates remain in app.js or ui.js for now
+    if (typeof drawScoreboard === "function") drawScoreboard();
+  },
+
+  // Resets the count for a new batter
+  resetAtBat() {
+    gameState.balls = 0;
+    gameState.strikes = 0;
+
+    // Tells the UI to wipe the pings from the strike zone
+    if (typeof clearZoneUI === "function") {
+      clearZoneUI();
+    }
+  },
+
+  // Re-calculates the entire game state from the pitch history
+  // Used primarily for the 'Undo' feature
+  reprocessHistory() {
+    const history = [...gameState.sessionPitches];
+
+    // 1. Reset counters
+    gameState.balls = 0;
+    gameState.strikes = 0;
+    gameState.totalPitches = 0;
+    gameState.outs = 0; // Optional: depending on if you want Undo to fix outs
+
+    // 2. Clear the actual active array
+    gameState.sessionPitches = [];
+
+    // 3. Re-simulate every pitch
+    history.forEach((p) => {
+      // Re-add to the array
+      gameState.sessionPitches.push(p);
+      // Let the engine re-calculate the count based on the result
+      this.updateCount(p.result);
+    });
+  },
+};
+
+async function checkSyncQueue() {
+  const queue = JSON.parse(localStorage.getItem("wildman_sync_queue") || "[]");
+  if (queue.length === 0 || !navigator.onLine) return;
+
+  console.log(`📡 Syncing ${queue.length} pending games...`);
+
+  for (let i = 0; i < queue.length; i++) {
+    try {
+      const result = await WildmanAPI.saveGame(queue[i]);
+      if (result && result.success) {
+        queue.splice(i, 1);
+        i--;
+        // Update the storage immediately so if the tab closes, the saved one is gone
+        localStorage.setItem("wildman_sync_queue", JSON.stringify(queue));
+      }
+    } catch (e) {
+      console.error("Sync failed for a specific game, skipping for now...");
+    }
+  }
+
+  localStorage.setItem("wildman_sync_queue", JSON.stringify(queue));
+  if (queue.length === 0) console.log("✅ All games synced!");
+}
+
+// Run check every time the app starts and every 5 minutes
+window.addEventListener("load", checkSyncQueue);
+setInterval(checkSyncQueue, 5 * 60 * 1000);
+
+
+--- FILE: js/stats.js ---
+function updateTimeOptions(type) {
+  const subSelect = document.getElementById("filter-sub-option");
+  const dateInput = document.getElementById("filter-date");
+  if (!subSelect) return;
+
+  subSelect.style.display = "none";
+  if (dateInput) dateInput.style.display = "none";
+
+  if (type === "all") {
+    applyFilters();
+  } else if (type === "month") {
+    subSelect.style.display = "block";
+    const months = [
+      ...new Set(
+        rawStatsData.games.map((g) => {
+          const d = new Date(g.played_at);
+          return d.toLocaleString("default", {
+            month: "long",
+            year: "numeric",
+          });
+        }),
+      ),
+    ];
+    subSelect.innerHTML =
+      `<option value="">SELECT MONTH...</option>` +
+      months.map((m) => `<option value="${m}">${m}</option>`).join("");
+  } else if (type === "week" || type === "single") {
+    subSelect.style.display = "block";
+
+    // Group by Sunday
+    const weeks = [
+      ...new Set(
+        rawStatsData.games.map((g) => {
+          const d = new Date(g.played_at);
+          const sun = new Date(d);
+          sun.setDate(d.getDate() - d.getDay()); // Roll back to Sunday
+          return sun.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+        }),
+      ),
+    ].sort((a, b) => new Date(b) - new Date(a)); // Newest weeks first
+
+    const label = type === "week" ? "SELECT WEEK..." : "PICK WEEK FIRST...";
+    subSelect.innerHTML =
+      `<option value="">${label}</option>` +
+      weeks.map((w) => `<option value="${w}">Week of ${w}</option>`).join("");
+  }
+}
+
+function populateFilterDropdowns() {
+  if (!rawStatsData || !rawStatsData.games) return;
+
+  const pSelect = document.getElementById("filter-pitcher");
+  const tSelect = document.getElementById("filter-team");
+  if (!pSelect || !tSelect || !rawStatsData.games) return;
+
+  // Use || to catch both 'pitcher_name' (DB) and 'pitcherName' (Local)
+  const pitchers = [
+    ...new Set(rawStatsData.games.map((g) => g.pitcher_name || g.pitcherName)),
+  ].filter(Boolean);
+
+  const teams = [
+    ...new Set(
+      rawStatsData.games.map(
+        (g) => g.pitcher_team || g.pitcherTeam || g.home_team || g.away_team,
+      ),
+    ),
+  ].filter(Boolean);
+
+  pSelect.innerHTML =
+    `<option value="all">All Pitchers</option>` +
+    pitchers.map((p) => `<option value="${p}">${p}</option>`).join("");
+
+  tSelect.innerHTML =
+    `<option value="all">All Teams</option>` +
+    teams.map((t) => `<option value="${t}">${t}</option>`).join("");
+}
+
+function applyFilters() {
+  const selectedP = document.getElementById("filter-pitcher").value;
+  const selectedT = document.getElementById("filter-team").value;
+  const radioMatch = document.querySelector('input[name="timespan"]:checked');
+  const span = radioMatch ? radioMatch.value : "all";
+  const selectedSub = document.getElementById("filter-sub-option").value;
+
+  let filteredGames = rawStatsData.games.filter((game) => {
+    const gameDate = new Date(game.played_at);
+    const matchP = selectedP === "all" || game.pitcher_name === selectedP;
+    const matchT =
+      selectedT === "all" ||
+      game.pitcher_team === selectedT ||
+      game.home_team === selectedT ||
+      game.away_team === selectedT;
+
+    let matchTime = true;
+
+    if (span === "month" && selectedSub) {
+      const gameMonth = gameDate.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+      matchTime = gameMonth === selectedSub;
+    } else if ((span === "week" || span === "single") && selectedSub) {
+      const sun = new Date(gameDate);
+      sun.setDate(gameDate.getDate() - gameDate.getDay());
+      const weekStr = sun.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      matchTime = weekStr === selectedSub;
+    }
+
+    return matchP && matchT && matchTime;
+  });
+
+  // SPECIAL: If searching for a "Single Game" and we have a week selected
+  if (span === "single" && selectedSub) {
+    showGamePicker(filteredGames);
+  } else {
+    // Remove game picker if not in "single" mode
+    const picker = document.getElementById("specific-game-picker");
+    if (picker) picker.style.display = "none";
+    processAndRenderStats(filteredGames, rawStatsData.pitches);
+  }
+}
+
+function processAndRenderStats(games, pitches) {
+  if (!games || games.length === 0) {
+    display.innerHTML =
+      "<p style='text-align:center; padding:40px; color:#666;'>No game data found for this selection.</p>";
+    return;
+  }
+  const display = document.getElementById("stats-display");
+  if (!display) return;
+
+  display.innerHTML = "";
+
+  // 1. FILTER DATA
+  const filteredGameIds = games.map((g) => g.id);
+  const activePitches = pitches.filter((p) =>
+    filteredGameIds.includes(p.game_id || p.gameId),
+  );
+
+  const totalP = activePitches.length;
+
+  // 2. CORE ANALYTICS
+  const strikes = activePitches.filter(
+    (p) =>
+      p.result &&
+      (p.result.includes("Strike") ||
+        p.result === "Foul" ||
+        p.result === "In-Play"),
+  ).length;
+
+  const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
+
+  const maxV =
+    activePitches.length > 0
+      ? Math.max(...activePitches.map((p) => p.velocity || p.speed || 0))
+      : 0;
+
+  // 3. ADVANCED METRICS (Whiff & Zone)
+  const swings = activePitches.filter(
+    (p) =>
+      p.result === "Strike Swinging" ||
+      p.result === "In-Play" ||
+      p.result === "Foul",
+  ).length;
+  const whiffs = activePitches.filter(
+    (p) => p.result === "Strike Swinging",
+  ).length;
+  const whiffPct = swings > 0 ? ((whiffs / swings) * 100).toFixed(1) : "0.0";
+
+  // Zone breakdown (Heart of the zone: 20-80% X, 15-85% Y)
+  const strikesInZone = activePitches.filter(
+    (p) =>
+      p.location_x > 20 &&
+      p.location_x < 80 &&
+      p.location_y > 15 &&
+      p.location_y < 85,
+  ).length;
+  const zonePct =
+    totalP > 0 ? ((strikesInZone / totalP) * 100).toFixed(0) : "0";
+
+  // 4. FIRST PITCH STRIKE (FPS)
+  const firstPitches = activePitches.filter((p) => {
+    const count = p.count_before || p.countBefore;
+    return count && count.toString().replace(/\s+/g, "") === "0-0";
+  });
+
+  const totalAtBats = firstPitches.length;
+  const fpsStrikes = firstPitches.filter(
+    (p) =>
+      p.result.includes("Strike") ||
+      p.result === "Foul" ||
+      p.result === "In-Play",
+  ).length;
+  const fpsPct =
+    totalAtBats > 0 ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) : "N/A";
+
+  // 5. RENDER DASHBOARD
+  const tendencies = calculateTendencies(activePitches);
+
+  let html = `
+    <div class="stats-hero-container" style="padding: 10px;">
+        <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2rem; color: var(--strike);">${sPct}%</span></div>
+            <div class="stat-card hero-card"><label>WHIFF %</label><span style="font-size: 2rem; color: #e91e63;">${whiffPct}%</span></div>
+            <div class="stat-card"><label>1ST PITCH STR%</label><span style="color: #ffeb3b;">${fpsPct}%</span></div>
+            <div class="stat-card"><label>ZONE %</label><span>${zonePct}%</span></div>
+            <div class="stat-card"><label>MAX VELO</label><span style="color: var(--accent);">${maxV} MPH</span></div>
+            <div class="stat-card"><label>TOTAL PITCHES</label><span>${totalP}</span></div>
+        </div>
+
+        <div class="heatmap-section" style="margin-bottom: 25px; text-align: center;">
+            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px;">LOCATION HEATMAP</h3>
+            <div class="stats-heatmap-container" style="position:relative; width:220px; height:275px; background:#111; margin:0 auto; border:2px solid #333; border-radius:12px; overflow: hidden;">
+                <div class="inner-plate" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60%; height:70%; border:1px solid rgba(255,255,255,0.1); pointer-events:none;"></div>
+                ${activePitches
+                  .map(
+                    (p) => `
+                    <div class="ping" style="left:${p.location_x}%; top:${p.location_y}%; background:${getPitchColor(p.result)}; width:7px; height:7px; opacity:0.7; position:absolute; border-radius:50%; transform:translate(-50%,-50%);"></div>
+                `,
+                  )
+                  .join("")}
+            </div>
+        </div>
+
+        <div class="tendency-container" style="margin-bottom: 25px;">
+            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px;">PITCH TENDENCIES</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #111; border-radius: 10px; overflow: hidden;">
+                <thead>
+                    <tr style="background: #1a1a1a; color: #888; text-align: left;">
+                        <th style="padding: 10px;">TYPE</th>
+                        <th style="padding: 10px;">QTY</th>
+                        <th style="padding: 10px;">AVG</th>
+                        <th style="padding: 10px;">MAX</th>
+                        <th style="padding: 10px;">STR%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tendencies
+                      .map(
+                        (t) => `
+                        <tr style="border-bottom: 1px solid #222;">
+                            <td style="padding: 12px; font-weight: bold; color: var(--accent);">${t.label}</td>
+                            <td style="padding: 12px;">${t.count}</td>
+                            <td style="padding: 12px;">${t.avgV}</td>
+                            <td style="padding: 12px;">${t.maxV}</td>
+                            <td style="padding: 12px; color: var(--strike); font-weight: bold;">${t.sPct}%</td>
+                        </tr>
+                    `,
+                      )
+                      .join("")}
+                </tbody>
+            </table>
+        </div>
+
+        <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS</h3>
+        <div class="mini-games-list">
+  `;
+
+  // 6. RECENT GAMES LIST
+  const recentGames = games.slice(0, 3);
+  if (recentGames.length === 0) {
+    html += `<p style="color:#444; text-align:center; font-style:italic; padding: 20px;">No games match filters.</p>`;
+  } else {
+    recentGames.forEach((game) => {
+      const gamePitches = pitches.filter(
+        (p) => (p.game_id || p.gameId) === game.id,
+      );
+      const date = new Date(game.played_at).toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+      });
+
+      // Strikeout logic
+      let strikeouts = 0,
+        sCount = 0;
+      gamePitches.forEach((p) => {
+        if (["Ball", "In-Play", "HBP"].includes(p.result)) {
+          sCount = 0;
+        } else if (p.result.includes("Strike") || p.result === "Foul") {
+          if (sCount === 2 && p.result !== "Foul") {
+            strikeouts++;
+            sCount = 0;
+          } else if (p.result !== "Foul" || sCount < 2) sCount++;
+        }
+      });
+
+      const reportText = generateConciseReport(
+        game,
+        gamePitches,
+        strikeouts,
+        date,
+      );
+      const safeReport = btoa(unescape(encodeURIComponent(reportText)));
+
+      html += `
+        <div class="mini-game-row" onclick="viewSingleGameStats('${game.id}')"
+             style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; margin-bottom:8px; border-radius:10px; border: 1px solid #222; cursor: pointer;">
+            <div class="game-meta">
+                <h4 style="margin:0; font-size:0.85rem; color:#eee;">${game.away_team} @ ${game.home_team}</h4>
+                <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} P</p>
+            </div>
+            <button onclick="event.stopPropagation(); copyReport('${safeReport}')" 
+                    style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 800;">
+                REPORT
+            </button>
+        </div>
+      `;
+    });
+  }
+
+  html += `</div></div>`;
+  display.innerHTML = html;
+}
+
+/**
+ * Helper to jump into a single game's analytics when clicked
+ */
+function viewSingleGameStats(gameId) {
+  const game = rawStatsData.games.find((g) => g.id == gameId);
+  if (game) {
+    // We pass a single game in an array, and all pitches.
+    // processAndRenderStats will handle the internal filtering.
+    processAndRenderStats([game], rawStatsData.pitches);
+
+    // Visual feedback that we are looking at a specific game
+    const display = document.getElementById("stats-display");
+    const backBtn = document.createElement("button");
+    backBtn.innerText = "← BACK TO ALL";
+    backBtn.style =
+      "background:none; border:none; color:var(--accent); font-size:0.7rem; font-weight:bold; margin-bottom:10px; cursor:pointer;";
+    backBtn.onclick = () => applyFilters(); // Reset to current filters
+    display.prepend(backBtn);
+  }
+}
+
+function toggleDateInput(value) {
+  const dateInput = document.getElementById("filter-date");
+  // If user picks "single", show the calendar. Otherwise, hide it.
+  if (value === "single") {
+    dateInput.style.display = "block";
+  } else {
+    dateInput.style.display = "none";
+    applyFilters(); // Re-run stats immediately for Week/Month/All
+  }
+}
+
+function generateConciseReport(game, pitches, kCount, date) {
+  const total = pitches.length;
+  const strikes = pitches.filter(
+    (p) => p.result.includes("Strike") || p.result === "Foul",
+  ).length;
+  const sPct = total > 0 ? Math.round((strikes / total) * 100) : 0;
+  const maxV =
+    pitches.length > 0 ? Math.max(...pitches.map((p) => p.velocity)) : 0;
+
+  // Inning calculation (approximated from game total duration or max inning logged)
+  // For now we use the final score as requested
+  return `📊 WILDMAN REPORT: ${date}
+Game: ${game.away_team} @ ${game.home_team} (${game.final_score_away}-${game.final_score_home})
+Pitcher: ${game.pitcher_name}
+Line: ${kCount} K
+Velo: Max ${maxV} MPH
+Strikes: ${sPct}% (${strikes}/${total})`;
+}
+
+function copyReport(encodedReport) {
+  const report = atob(encodedReport);
+  navigator.clipboard.writeText(report).then(() => {
+    alert("Scout Report copied to clipboard! Ready to text.");
+  });
+}
+
+function showGamePicker(gamesInWeek) {
+  let picker = document.getElementById("specific-game-picker");
+
+  // Create it if it doesn't exist yet
+  if (!picker) {
+    picker = document.createElement("select");
+    picker.id = "specific-game-picker";
+    // Append it to the container
+    document.getElementById("dynamic-time-container").appendChild(picker);
+  }
+
+  picker.style.display = "block";
+
+  // Wire up the change event
+  picker.onchange = (e) => {
+    const gameId = e.target.value;
+    if (gameId) {
+      const single = gamesInWeek.filter((g) => g.id == gameId);
+      processAndRenderStats(single, rawStatsData.pitches);
+    }
+  };
+
+  // Fill with game scores
+  picker.innerHTML =
+    `<option value="">SELECT SPECIFIC GAME...</option>` +
+    gamesInWeek
+      .map((g) => {
+        const d = new Date(g.played_at).toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+        });
+        return `<option value="${g.id}">${d}: ${g.away_team} (${g.final_score_away}) @ ${g.home_team} (${g.final_score_home})</option>`;
+      })
+      .join("");
+}
+
+function calculateTendencies(pitches) {
+  const types = ["FB", "BR", "CH"];
+  const labels = { FB: "Fastball", BR: "Breaking", CH: "Changeup" };
+
+  // LOG: Helpful for verifying what the DB is actually sending back
+  if (pitches.length > 0) console.log("Analyzing Pitch Data:", pitches[0]);
+
+  return types
+    .map((type) => {
+      const typePitches = pitches.filter((p) => {
+        // Look for any possible key naming convention (DB vs Local)
+        const val = (p.pitch_type || p.type || p.pitchType || "")
+          .toString()
+          .toUpperCase();
+
+        // Strict mapping to ensure codes match full words if necessary
+        if (type === "FB") return val === "FB" || val.includes("FAST");
+        if (type === "BR") return val === "BR" || val.includes("BREAK");
+        if (type === "CH") return val === "CH" || val.includes("CHANGE");
+        return false;
+      });
+
+      if (typePitches.length === 0) return null;
+
+      const strikes = typePitches.filter(
+        (p) =>
+          p.result &&
+          (p.result.includes("Strike") ||
+            p.result === "Foul" ||
+            p.result === "In-Play"),
+      ).length;
+
+      // Handle velocity keys for both DB (velocity) and older local (speed)
+      const vels = typePitches
+        .map((p) => p.velocity || p.speed || 0)
+        .filter((v) => v > 0);
+
+      const avgV =
+        vels.length > 0
+          ? (vels.reduce((a, b) => a + b, 0) / vels.length).toFixed(1)
+          : "-";
+
+      const maxV = vels.length > 0 ? Math.max(...vels) : "-";
+
+      const sPct = ((strikes / typePitches.length) * 100).toFixed(1);
+
+      return {
+        label: labels[type],
+        count: typePitches.length,
+        avgV,
+        maxV,
+        sPct,
+      };
+    })
+    .filter((t) => t !== null);
+}
+
+function renderHeatmap(pitches) {
+  return `
+    <div class="stats-heatmap-container" style="position:relative; width:200px; height:250px; background:#222; margin:0 auto; border:2px solid #444; border-radius:8px;">
+        <div class="inner-plate" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60%; height:70%; border:1px solid rgba(255,255,255,0.1);"></div>
+        ${pitches
+          .map(
+            (p) => `
+            <div class="ping" style="left:${p.location_x}%; top:${p.location_y}%; background:${getPitchColor(p.result)}; width:6px; height:6px; opacity:0.6;"></div>
+        `,
+          )
+          .join("")}
+    </div>
+  `;
+}
+
+
+--- FILE: js/ui.js ---
+let inningPressTimer;
+let isLongPress = false;
+
+function startInningTimer() {
+  isLongPress = false;
+  // Hold for 600ms to go backward
+  inningPressTimer = setTimeout(() => {
+    isLongPress = true;
+    adjustInning(-1);
+  }, 600);
+}
+
+function stopInningTimer() {
+  if (inningPressTimer) {
+    clearTimeout(inningPressTimer);
+    // Only go forward if it wasn't a long press
+    if (!isLongPress) {
+      adjustInning(1);
+    }
+    inningPressTimer = null; // Reset for next tap
+  }
+}
+
+function showHomeScreen() {
+  document.getElementById("setup-screen").style.display = "none";
+  document.getElementById("home-screen").style.display = "flex";
+}
+
+function showSetupScreen() {
+  document.getElementById("home-screen").style.display = "none";
+  document.getElementById("setup-screen").style.display = "flex";
+  updateTeamDatalist();
+}
+
+function updateVeloDisplay(val) {
+  document.getElementById("velo-number").innerText = val;
+}
+
+function stepVelo(amount) {
+  const slider = document.getElementById("pitch-speed");
+  let newVal = parseInt(slider.value) + amount;
+  if (newVal >= 40 && newVal <= 105) {
+    slider.value = newVal;
+    updateVeloDisplay(newVal);
+  }
+}
+
+function drawScoreboard() {
+  document.getElementById("main-count").innerText =
+    `${gameState.balls} - ${gameState.strikes}`;
+  document.getElementById("pitch-total").innerText = gameState.totalPitches;
+  document.getElementById("display-inning").innerText = gameState.inning;
+  document.getElementById("display-outs").innerText = gameState.outs;
+  document.getElementById("current-pitcher").innerText = gameState.pitcherName;
+  document.getElementById("score-home").innerText = gameState.homeScore;
+  document.getElementById("score-away").innerText = gameState.awayScore;
+  document.getElementById("label-home").innerText = (
+    gameState.homeTeam || "HOME"
+  ).toUpperCase();
+  document.getElementById("label-away").innerText = (
+    gameState.awayTeam || "AWAY"
+  ).toUpperCase();
+}
+
+function placePing(x, y) {
+  document.querySelectorAll(".temp-ping").forEach((p) => p.remove());
+  const ping = document.createElement("div");
+  ping.className = "ping temp-ping";
+  ping.style.left = x + "%";
+  ping.style.top = y + "%";
+  // Grab the element directly to avoid "strikeZone is undefined" errors
+  document.getElementById("strike-zone").appendChild(ping);
+}
+
+function clearZoneUI() {
+  // 1. Physically remove dots from the screen
+  document.querySelectorAll(".ping").forEach((p) => p.remove());
+}
+
+function setPitcher(p) {
+  gameState.pitcherName = `${p.first} ${p.last}`;
+  gameState.pitcherHand = p.hand;
+  drawScoreboard();
+  saveToLocal();
+}
+
+function updateTeamDatalist() {
+  const h = JSON.parse(localStorage.getItem("pitchTrackerHistory")) || [],
+    teams = new Set();
+  h.forEach((g) => {
+    if (g.homeTeam) teams.add(g.homeTeam);
+    if (g.awayTeam) teams.add(g.awayTeam);
+  });
+  document.getElementById("team-history").innerHTML = Array.from(teams)
+    .map((t) => `<option value="${t}">`)
+    .join("");
+}
+
+function closeStats() {
+  document.getElementById("stats-modal").style.display = "none";
+  const badge = document.getElementById("live-session-badge");
+  if (badge) badge.remove();
+}
+
+function closePitcherModal() {
+  document.getElementById("pitcher-modal").style.display = "none";
+}
+
+function saveNewPitcher() {
+  const first = document.getElementById("new-p-first").value;
+  const last = document.getElementById("new-p-last").value;
+
+  // NEW: Find which hand button is currently active
+  const handBtn = document.querySelector(".btn-hand.active");
+  const hand = handBtn
+    ? handBtn.innerText.includes("RIGHT")
+      ? "R"
+      : "L"
+    : "R";
+
+  if (!first || !last) return alert("Enter full name");
+
+  const roster = getRoster();
+  const newP = {
+    id: Date.now(),
+    first: first,
+    last: last,
+    hand: hand,
+  };
+
+  roster.push(newP);
+  localStorage.setItem("wildmanRoster", JSON.stringify(roster));
+
+  // Update the game state and close
+  setPitcher(newP);
+  closePitcherModal();
+
+  // Clear inputs for next time
+  document.getElementById("new-p-first").value = "";
+  document.getElementById("new-p-last").value = "";
+}
+
+function selectHand(h) {
+  // Toggle the active classes visually
+  document.getElementById("btn-right").classList.toggle("active", h === "R");
+  document.getElementById("btn-left").classList.toggle("active", h === "L");
+}
+
+function openPitcherPicker() {
+  const modal = document.getElementById("pitcher-picker-modal");
+  const container = document.getElementById("pitcher-list-container");
+
+  if (!modal || !container) return;
+
+  // Show the modal
+  modal.style.display = "flex";
+
+  // Get the current roster from storage
+  const roster = JSON.parse(localStorage.getItem("wildmanRoster")) || [];
+
+  if (roster.length === 0) {
+    container.innerHTML = `<p style="color: #444; text-align: center; padding: 20px;">No pitchers found. Add one below!</p>`;
+    return;
+  }
+
+  // Build the list of names
+  container.innerHTML = roster
+    .map(
+      (p) => `
+    <div onclick="selectPitcherFromMenu(${p.id})" 
+         style="padding: 15px; background: #111; border: 1px solid #222; border-radius: 12px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+      <span style="font-weight: bold; color: #fff;">${p.first} ${p.last}</span>
+      <span style="color: var(--accent); font-size: 0.7rem; font-weight: 900;">${p.hand === "R" ? "RIGHTY" : "LEFTY"}</span>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+function switchPitcher() {
+  clearZoneUI();
+  // Open the new selection overlay instead of the old prompt
+  openPitcherPicker();
+}
+
+function selectPitcherFromMenu(id) {
+  const roster = JSON.parse(localStorage.getItem("wildmanRoster")) || [];
+  const p = roster.find((pitcher) => pitcher.id === id);
+  if (p) {
+    setPitcher(p);
+    closePitcherPicker();
+  }
+}
+
+function closePitcherPicker() {
+  document.getElementById("pitcher-picker-modal").style.display = "none";
+}
+
+function openNewPitcherForm() {
+  closePitcherPicker(); // Close the selection list
+  document.getElementById("pitcher-modal").style.display = "flex"; // Open the 'Add New' form
+}
+
+
