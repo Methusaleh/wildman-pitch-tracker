@@ -281,9 +281,12 @@ async function openStats() {
   const display = document.getElementById("stats-display");
   modal.style.display = "flex";
 
-  // 1. If we have a live game, show it immediately!
-  if (gameState.sessionPitches.length > 0) {
-    const liveGame = {
+  // 1. Create the Live Game Object
+  const isLive = gameState.sessionPitches.length > 0;
+  let liveGame = null;
+
+  if (isLive) {
+    liveGame = {
       id: gameState.gameId,
       pitcher_name: gameState.pitcherName,
       away_team: gameState.awayTeam,
@@ -294,33 +297,51 @@ async function openStats() {
       final_score_away: gameState.awayScore,
     };
 
-    // We pass ONLY the live game and live pitches to start
+    // Render local data immediately so he's not waiting
     processAndRenderStats([liveGame], gameState.sessionPitches);
 
-    // Add a "Live" badge so he knows this isn't the cloud data
-    const liveBadge = document.createElement("div");
-    liveBadge.innerHTML = `<span style="background:var(--ball); color:white; padding:4px 8px; border-radius:4px; font-size:0.6rem; font-weight:900; margin-left:20px;">LIVE SESSION</span>`;
-    document.querySelector(".modal-header").appendChild(liveBadge);
+    // Prevent duplicate "Live" badges
+    if (!document.getElementById("live-session-badge")) {
+      const liveBadge = document.createElement("div");
+      liveBadge.id = "live-session-badge";
+      liveBadge.innerHTML = `<span style="background:var(--ball); color:white; padding:4px 8px; border-radius:4px; font-size:0.6rem; font-weight:900; margin-left:20px;">LIVE SESSION</span>`;
+      document.querySelector(".modal-header").appendChild(liveBadge);
+    }
   } else {
     display.innerHTML =
       "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
+    // Remove badge if no live game
+    const oldBadge = document.getElementById("live-session-badge");
+    if (oldBadge) oldBadge.remove();
   }
 
-  // 2. Background Sync (Don't let this block the UI)
+  // 2. Fetch Cloud Data and MERGE
   try {
     const cloudData = await WildmanAPI.fetchStats();
     if (cloudData) {
-      rawStatsData = cloudData;
+      // THE CRITICAL MERGE:
+      // We put the live game at the front of the list so it shows up in filters
+      rawStatsData.games = isLive
+        ? [liveGame, ...cloudData.games]
+        : cloudData.games;
+      rawStatsData.pitches = isLive
+        ? [...gameState.sessionPitches, ...cloudData.pitches]
+        : cloudData.pitches;
+
       populateFilterDropdowns();
 
-      // If no live game is running, apply the standard filters
-      if (gameState.sessionPitches.length === 0) {
+      // If no live game, show the default history view
+      if (!isLive) {
         applyFilters();
       }
     }
   } catch (err) {
-    console.warn("Cloud sync failed, sticking with local data.");
-    if (gameState.sessionPitches.length === 0) {
+    console.warn("Cloud sync failed. Operating in local-only mode.");
+    if (isLive) {
+      rawStatsData.games = [liveGame];
+      rawStatsData.pitches = [...gameState.sessionPitches];
+      populateFilterDropdowns();
+    } else {
       display.innerHTML =
         "<p style='text-align:center; color:red;'>Offline: No Cloud Data Available</p>";
     }

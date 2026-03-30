@@ -98,6 +98,8 @@ function updateTeamDatalist() {
 
 function closeStats() {
   document.getElementById("stats-modal").style.display = "none";
+  const badge = document.getElementById("live-session-badge");
+  if (badge) badge.remove();
 }
 
 function closePitcherModal() {

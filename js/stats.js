@@ -53,16 +53,20 @@ function updateTimeOptions(type) {
 function populateFilterDropdowns() {
   const pSelect = document.getElementById("filter-pitcher");
   const tSelect = document.getElementById("filter-team");
+  if (!pSelect || !tSelect || !rawStatsData.games) return;
 
-  // Use "Sets" to get unique values only
-  const pitchers = [...new Set(rawStatsData.games.map((g) => g.pitcher_name))];
+  // Use || to catch both 'pitcher_name' (DB) and 'pitcherName' (Local)
+  const pitchers = [
+    ...new Set(rawStatsData.games.map((g) => g.pitcher_name || g.pitcherName)),
+  ].filter(Boolean);
+
   const teams = [
     ...new Set(
       rawStatsData.games.map(
-        (g) => g.pitcher_team || g.home_team || g.away_team,
+        (g) => g.pitcher_team || g.pitcherTeam || g.home_team || g.away_team,
       ),
     ),
-  ];
+  ].filter(Boolean);
 
   pSelect.innerHTML =
     `<option value="all">All Pitchers</option>` +
