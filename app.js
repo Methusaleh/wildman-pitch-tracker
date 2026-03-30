@@ -147,11 +147,12 @@ function finishRecording(result, direction = null) {
     x: gameState.lastTap?.x || 50,
     y: gameState.lastTap?.y || 50,
     type: gameState.currentPitchType || "FB",
+    pitchType: gameState.currentPitchType || "FB",
     speed: speedValue,
     velocity: speedValue,
     result: result,
     direction: direction,
-    countBefore: `${gameState.balls}-${gameState.strikes}`,
+    countBefore: gameState.balls + "-" + gameState.strikes,
     timestamp: Date.now(),
     game_id: gameState.gameId, // Use game_id to match stats.js filters
   };

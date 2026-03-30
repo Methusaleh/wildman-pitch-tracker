@@ -380,11 +380,11 @@ function calculateTendencies(pitches) {
   return types
     .map((type) => {
       const typePitches = pitches.filter((p) => {
-        // Look for .type or .currentPitchType and make it uppercase
-        const val = (p.type || p.currentPitchType || "")
+        // Look at EVERY possible type key
+        const val = (p.type || p.pitchType || p.currentPitchType || "")
           .toString()
           .toUpperCase();
-        return val.includes(type);
+        return val === type || val.startsWith(type);
       });
 
       if (typePitches.length === 0) return null;
@@ -398,7 +398,7 @@ function calculateTendencies(pitches) {
 
       // Support .speed or .velocity
       const vels = typePitches
-        .map((p) => p.speed || p.velocity || 0)
+        .map((p) => p.velocity || p.speed || 0)
         .filter((v) => v > 0);
       const avgV =
         vels.length > 0
