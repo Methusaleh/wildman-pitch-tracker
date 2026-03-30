@@ -281,33 +281,48 @@ async function openStats() {
   const display = document.getElementById("stats-display");
   modal.style.display = "flex";
 
-  // If a game is active, we can show Live Stats immediately
+  // 1. If we have a live game, show it immediately!
   if (gameState.sessionPitches.length > 0) {
-    // We "fake" a game object so the stats engine accepts it
     const liveGame = {
       id: gameState.gameId,
       pitcher_name: gameState.pitcherName,
       away_team: gameState.awayTeam,
       home_team: gameState.homeTeam,
       played_at: new Date().toISOString(),
+      pitcher_team: gameState.pitcherTeam,
+      final_score_home: gameState.homeScore,
+      final_score_away: gameState.awayScore,
     };
 
-    // Render using local session pitches + any cloud pitches we already have
-    processAndRenderStats(
-      [liveGame],
-      [...rawStatsData.pitches, ...gameState.sessionPitches],
-      true,
-    );
+    // We pass ONLY the live game and live pitches to start
+    processAndRenderStats([liveGame], gameState.sessionPitches);
+
+    // Add a "Live" badge so he knows this isn't the cloud data
+    const liveBadge = document.createElement("div");
+    liveBadge.innerHTML = `<span style="background:var(--ball); color:white; padding:4px 8px; border-radius:4px; font-size:0.6rem; font-weight:900; margin-left:20px;">LIVE SESSION</span>`;
+    document.querySelector(".modal-header").appendChild(liveBadge);
   } else {
     display.innerHTML =
       "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
-    try {
-      rawStatsData = await WildmanAPI.fetchStats();
+  }
+
+  // 2. Background Sync (Don't let this block the UI)
+  try {
+    const cloudData = await WildmanAPI.fetchStats();
+    if (cloudData) {
+      rawStatsData = cloudData;
       populateFilterDropdowns();
-      applyFilters();
-    } catch (err) {
+
+      // If no live game is running, apply the standard filters
+      if (gameState.sessionPitches.length === 0) {
+        applyFilters();
+      }
+    }
+  } catch (err) {
+    console.warn("Cloud sync failed, sticking with local data.");
+    if (gameState.sessionPitches.length === 0) {
       display.innerHTML =
-        "<p style='text-align:center; color:red;'>Sync Error</p>";
+        "<p style='text-align:center; color:red;'>Offline: No Cloud Data Available</p>";
     }
   }
 }

@@ -123,6 +123,11 @@ function applyFilters() {
 }
 
 function processAndRenderStats(games, pitches) {
+  if (!games || games.length === 0) {
+    display.innerHTML =
+      "<p style='text-align:center; padding:40px; color:#666;'>No game data found for this selection.</p>";
+    return;
+  }
   const display = document.getElementById("stats-display");
   if (!display) return;
 
