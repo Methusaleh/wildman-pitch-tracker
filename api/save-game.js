@@ -25,7 +25,8 @@ export default async function handler(req, res) {
       gameData.pitcherName,
     );
 
-    // 3. The Database Transaction
+    // 3. The Database Transaction - GAMES TABLE
+    // We use the exact keys sent from app.js endGame()
     const gameResult = await sql`
         INSERT INTO games (
             pitcher_name, 
@@ -41,22 +42,42 @@ export default async function handler(req, res) {
             ${gameData.pitcherTeam || ""}, 
             ${gameData.homeTeam || ""}, 
             ${gameData.awayTeam || ""}, 
-            ${gameData.homeScore || 0}, 
-            ${gameData.awayScore || 0}, 
-            ${gameData.timerSeconds || 0}
+            ${gameData.final_score_home || 0}, 
+            ${gameData.final_score_away || 0}, 
+            ${gameData.game_duration_seconds || 0}
         )
         RETURNING id;
     `;
 
     const gameId = gameResult[0].id;
 
+    // 4. Save Pitches - PITCHES TABLE
     if (pitches && pitches.length > 0) {
-      console.log(`Saving ${pitches.length} pitches...`);
+      console.log(`Saving ${pitches.length} pitches for Game ID: ${gameId}`);
+
       for (const p of pitches) {
         await sql`
-                    INSERT INTO pitches (game_id, pitch_type, velocity, result, location_x, location_y, hit_direction)
-                    VALUES (${gameId}, ${p.type}, ${p.speed}, ${p.result}, ${p.x}, ${p.y}, ${p.direction});
-                `;
+            INSERT INTO pitches (
+                game_id, 
+                pitch_type, 
+                velocity, 
+                result, 
+                location_x, 
+                location_y, 
+                hit_direction,
+                count_before
+            )
+            VALUES (
+                ${gameId}, 
+                ${p.pitch_type || "FB"}, 
+                ${p.velocity || 0}, 
+                ${p.result || ""}, 
+                ${p.location_x || 50}, 
+                ${p.location_y || 50}, 
+                ${p.hit_direction || null},
+                ${p.count_before || "0-0"}
+            );
+        `;
       }
     }
 
