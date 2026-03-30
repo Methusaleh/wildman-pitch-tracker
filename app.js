@@ -85,11 +85,16 @@ function resetTimer() {
 
 // --- PITCH RECORDING ---
 function setPitchType(type) {
+  console.log("Switching to pitch type:", type); // Add this to debug!
   gameState.currentPitchType = type;
+
   document
     .querySelectorAll(".type-chip")
     .forEach((chip) => chip.classList.remove("active"));
-  document.getElementById(`type-${type}`).classList.add("active");
+  const btn = document.getElementById(`type-${type}`);
+  if (btn) btn.classList.add("active");
+
+  saveToLocal(); // Ensure this is saved immediately
 }
 
 function showStrikeSplit() {

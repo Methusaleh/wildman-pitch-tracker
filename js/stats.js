@@ -377,31 +377,46 @@ function calculateTendencies(pitches) {
   const types = ["FB", "BR", "CH"];
   const labels = { FB: "Fastball", BR: "Breaking", CH: "Changeup" };
 
+  // LOG: Helpful for verifying what the DB is actually sending back
+  if (pitches.length > 0) console.log("Analyzing Pitch Data:", pitches[0]);
+
   return types
     .map((type) => {
       const typePitches = pitches.filter((p) => {
-        // Look for 'pitch_type' (from DB) or 'type' (from local)
-        const val = (p.pitch_type || p.type || "").toString().toUpperCase();
-        return val === type || val.startsWith(type);
+        // Look for any possible key naming convention (DB vs Local)
+        const val = (p.pitch_type || p.type || p.pitchType || "")
+          .toString()
+          .toUpperCase();
+
+        // Strict mapping to ensure codes match full words if necessary
+        if (type === "FB") return val === "FB" || val.includes("FAST");
+        if (type === "BR") return val === "BR" || val.includes("BREAK");
+        if (type === "CH") return val === "CH" || val.includes("CHANGE");
+        return false;
       });
 
       if (typePitches.length === 0) return null;
 
       const strikes = typePitches.filter(
         (p) =>
-          p.result.includes("Strike") ||
-          p.result === "Foul" ||
-          p.result === "In-Play",
+          p.result &&
+          (p.result.includes("Strike") ||
+            p.result === "Foul" ||
+            p.result === "In-Play"),
       ).length;
 
+      // Handle velocity keys for both DB (velocity) and older local (speed)
       const vels = typePitches
         .map((p) => p.velocity || p.speed || 0)
         .filter((v) => v > 0);
+
       const avgV =
         vels.length > 0
           ? (vels.reduce((a, b) => a + b, 0) / vels.length).toFixed(1)
           : "-";
+
       const maxV = vels.length > 0 ? Math.max(...vels) : "-";
+
       const sPct = ((strikes / typePitches.length) * 100).toFixed(1);
 
       return {
