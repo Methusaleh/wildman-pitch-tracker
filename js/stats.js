@@ -168,9 +168,7 @@ function processAndRenderStats(games, pitches) {
 
   // If no counts were found in the data, display "N/A" instead of "0%"
   const fpsPct =
-    totalAtBats > 0
-      ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) + "%"
-      : "N/A";
+    totalAtBats > 0 ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) : "N/A";
 
   // 3. PITCH TENDENCIES LOGIC
   const tendencies = calculateTendencies(activePitches);
