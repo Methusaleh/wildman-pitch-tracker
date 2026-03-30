@@ -299,11 +299,13 @@ async function openStats() {
 
 async function endGame() {
   if (!confirm("Save game to Wildman Database?")) return;
+
+  // 1. Stop the clock if it's still running
   if (gameState.timerActive) toggleTimer();
 
-  // We must match your Neon columns EXACTLY:
+  // 2. Map the data EXACTLY for your Neon DB columns
   const mappedPitches = gameState.sessionPitches.map((p) => ({
-    game_id: gameState.gameId, // Links to the games table
+    game_id: gameState.gameId,
     pitch_type: p.type || "FB",
     velocity: parseInt(p.speed || p.velocity || 0),
     result: p.result,
@@ -311,7 +313,6 @@ async function endGame() {
     location_y: parseFloat(p.y),
     hit_direction: p.direction || null,
     timestamp: new Date(p.timestamp).toISOString(),
-    // CRITICAL: This MUST be the string "0-0" for the first pitch
     count_before: p.countBefore || "0-0",
   }));
 
@@ -321,21 +322,52 @@ async function endGame() {
       pitcherTeam: gameState.pitcherTeam,
       homeTeam: gameState.homeTeam,
       awayTeam: gameState.awayTeam,
-      final_score_home: gameState.homeScore, // Matches your Neon column
-      final_score_away: gameState.awayScore, // Matches your Neon column
-      game_duration_seconds: gameState.timerSeconds, // Matches your Neon column
+      final_score_home: gameState.homeScore,
+      final_score_away: gameState.awayScore,
+      game_duration_seconds: gameState.timerSeconds,
     },
     pitches: mappedPitches,
   };
 
-  const result = await WildmanAPI.saveGame(payload);
-  if (result?.success) {
-    alert("⚾ Saved to Neon!");
-    localStorage.removeItem("currentPitchTrackerGame");
-    location.reload();
-  } else {
-    alert("Error: " + (result.error || "Check logs"));
+  // 3. The "Smart" Save Logic
+  try {
+    // If browser reports offline immediately, don't even try the fetch
+    if (!navigator.onLine) {
+      throw new Error("Offline Mode");
+    }
+
+    const result = await WildmanAPI.saveGame(payload);
+
+    if (result?.success) {
+      alert("⚾ Saved to Neon Cloud!");
+      cleanupAfterSave();
+    } else {
+      // If the server is up but returned an error (like a DB timeout)
+      throw new Error(result?.error || "Server Error");
+    }
+  } catch (err) {
+    // 4. OFFLINE FALLBACK
+    console.warn("Save failed or offline. Queueing for sync:", err.message);
+
+    saveToSyncQueue(payload);
+
+    alert(
+      "📡 No Internet or Sync Error!\n\nGame saved locally on this iPad. It will upload automatically once you're back on Wi-Fi.",
+    );
+
+    cleanupAfterSave();
   }
+}
+
+function saveToSyncQueue(payload) {
+  let queue = JSON.parse(localStorage.getItem("wildman_sync_queue") || "[]");
+  queue.push(payload);
+  localStorage.setItem("wildman_sync_queue", JSON.stringify(queue));
+}
+
+function cleanupAfterSave() {
+  localStorage.removeItem("currentPitchTrackerGame");
+  location.reload();
 }
 
 function confirmSetup() {
