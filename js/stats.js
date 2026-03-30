@@ -51,6 +51,8 @@ function updateTimeOptions(type) {
 }
 
 function populateFilterDropdowns() {
+  if (!rawStatsData || !rawStatsData.games) return;
+
   const pSelect = document.getElementById("filter-pitcher");
   const tSelect = document.getElementById("filter-team");
   if (!pSelect || !tSelect || !rawStatsData.games) return;

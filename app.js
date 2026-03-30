@@ -281,7 +281,9 @@ async function openStats() {
   const display = document.getElementById("stats-display");
   modal.style.display = "flex";
 
-  // 1. Create the Live Game Object
+  // 1. Ensure rawStatsData is a valid object so we don't crash
+  if (!rawStatsData) rawStatsData = { games: [], pitches: [] };
+
   const isLive = gameState.sessionPitches.length > 0;
   let liveGame = null;
 
@@ -289,18 +291,25 @@ async function openStats() {
     liveGame = {
       id: gameState.gameId,
       pitcher_name: gameState.pitcherName,
+      pitcherName: gameState.pitcherName, // Add both naming styles for safety
       away_team: gameState.awayTeam,
       home_team: gameState.homeTeam,
       played_at: new Date().toISOString(),
       pitcher_team: gameState.pitcherTeam,
+      pitcherTeam: gameState.pitcherTeam,
       final_score_home: gameState.homeScore,
       final_score_away: gameState.awayScore,
     };
 
-    // Render local data immediately so he's not waiting
+    // FORCE local data into the global rawStatsData pool immediately
+    rawStatsData.games = [liveGame];
+    rawStatsData.pitches = [...gameState.sessionPitches];
+
+    // Show the local stats right now
+    populateFilterDropdowns();
     processAndRenderStats([liveGame], gameState.sessionPitches);
 
-    // Prevent duplicate "Live" badges
+    // Live Badge logic
     if (!document.getElementById("live-session-badge")) {
       const liveBadge = document.createElement("div");
       liveBadge.id = "live-session-badge";
@@ -310,17 +319,13 @@ async function openStats() {
   } else {
     display.innerHTML =
       "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
-    // Remove badge if no live game
-    const oldBadge = document.getElementById("live-session-badge");
-    if (oldBadge) oldBadge.remove();
   }
 
-  // 2. Fetch Cloud Data and MERGE
+  // 2. NOW try to bring in the cloud data in the background
   try {
     const cloudData = await WildmanAPI.fetchStats();
-    if (cloudData) {
-      // THE CRITICAL MERGE:
-      // We put the live game at the front of the list so it shows up in filters
+    if (cloudData && cloudData.games) {
+      // Add cloud games to our existing live game(s)
       rawStatsData.games = isLive
         ? [liveGame, ...cloudData.games]
         : cloudData.games;
@@ -328,23 +333,15 @@ async function openStats() {
         ? [...gameState.sessionPitches, ...cloudData.pitches]
         : cloudData.pitches;
 
+      // Re-populate filters so history appears in the dropdowns
       populateFilterDropdowns();
 
-      // If no live game, show the default history view
-      if (!isLive) {
-        applyFilters();
-      }
+      // If NOT mid-game, show the default cloud history
+      if (!isLive) applyFilters();
     }
   } catch (err) {
-    console.warn("Cloud sync failed. Operating in local-only mode.");
-    if (isLive) {
-      rawStatsData.games = [liveGame];
-      rawStatsData.pitches = [...gameState.sessionPitches];
-      populateFilterDropdowns();
-    } else {
-      display.innerHTML =
-        "<p style='text-align:center; color:red;'>Offline: No Cloud Data Available</p>";
-    }
+    console.error("Cloud Fetch Failed:", err);
+    // No alert needed, we already showed the live data or an error message
   }
 }
 
