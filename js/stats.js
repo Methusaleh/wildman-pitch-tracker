@@ -152,8 +152,12 @@ function processAndRenderStats(games, pitches) {
       : 0;
 
   // 2. FIRST PITCH STRIKE (FPS) LOGIC
-  // We identify the first pitch of every at-bat by the 0-0 count
-  const firstPitches = activePitches.filter((p) => p.countBefore === "0 - 0");
+  const firstPitches = activePitches.filter((p) => {
+    if (!p.countBefore) return false;
+    // Strip all spaces so "0-0", "0 - 0", etc. all match "0-0"
+    return p.countBefore.replace(/\s+/g, "") === "0-0";
+  });
+
   const totalAtBats = firstPitches.length;
   const fpsStrikes = firstPitches.filter(
     (p) =>
@@ -370,16 +374,20 @@ function calculateTendencies(pitches) {
   const types = ["FB", "BR", "CH"];
   const labels = { FB: "Fastball", BR: "Breaking", CH: "Changeup" };
 
+  // LOG: Let's see what the app is actually saving
+  if (pitches.length > 0) console.log("Sample Pitch Object:", pitches[0]);
+
   return types
     .map((type) => {
-      const typePitches = pitches.filter((p) => p.type === type);
-      const count = typePitches.length;
+      const typePitches = pitches.filter((p) => {
+        // Look for .type or .currentPitchType and make it uppercase
+        const val = (p.type || p.currentPitchType || "")
+          .toString()
+          .toUpperCase();
+        return val.includes(type);
+      });
 
-      if (count === 0) return null;
-
-      const vels = typePitches
-        .map((p) => p.speed || p.velocity || 0)
-        .filter((v) => v > 0);
+      if (typePitches.length === 0) return null;
 
       const strikes = typePitches.filter(
         (p) =>
@@ -388,14 +396,24 @@ function calculateTendencies(pitches) {
           p.result === "In-Play",
       ).length;
 
+      // Support .speed or .velocity
+      const vels = typePitches
+        .map((p) => p.speed || p.velocity || 0)
+        .filter((v) => v > 0);
       const avgV =
         vels.length > 0
           ? (vels.reduce((a, b) => a + b, 0) / vels.length).toFixed(1)
           : "-";
       const maxV = vels.length > 0 ? Math.max(...vels) : "-";
-      const sPct = ((strikes / count) * 100).toFixed(1);
+      const sPct = ((strikes / typePitches.length) * 100).toFixed(1);
 
-      return { label: labels[type], count, avgV, maxV, sPct };
+      return {
+        label: labels[type],
+        count: typePitches.length,
+        avgV,
+        maxV,
+        sPct,
+      };
     })
     .filter((t) => t !== null);
 }

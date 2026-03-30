@@ -322,6 +322,7 @@ function confirmSetup() {
   gameState.awayTeam = a;
   gameState.pitcherTeam = pt;
   gameState.location = document.getElementById("location-input").value;
+  gameState.gameId = "game-" + Date.now();
 
   document.getElementById("setup-screen").style.display = "none";
   document.getElementById("app").style.display = "flex";
