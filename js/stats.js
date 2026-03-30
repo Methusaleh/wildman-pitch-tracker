@@ -148,12 +148,11 @@ function processAndRenderStats(games, pitches) {
   const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
   const maxV =
     activePitches.length > 0
-      ? Math.max(...activePitches.map((p) => p.velocity || 0))
+      ? Math.max(...activePitches.map((p) => p.velocity || p.speed || 0))
       : 0;
 
   // 2. FIRST PITCH STRIKE (FPS) LOGIC
   const firstPitches = activePitches.filter((p) => {
-    // Check for 'count_before' (DB style) or 'countBefore' (Local style)
     const count = p.count_before || p.countBefore;
     if (!count) return false;
     return count.toString().replace(/\s+/g, "") === "0-0";

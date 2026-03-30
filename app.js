@@ -296,17 +296,18 @@ async function endGame() {
   if (!confirm("Save game to Wildman Database?")) return;
   if (gameState.timerActive) toggleTimer();
 
-  // Map the pitches to include the new count_before field for the DB
+  // We must match your Neon columns EXACTLY:
   const mappedPitches = gameState.sessionPitches.map((p) => ({
-    pitch_type: p.type || p.pitchType,
-    velocity: p.speed || p.velocity,
+    game_id: gameState.gameId, // Links to the games table
+    pitch_type: p.type || "FB",
+    velocity: parseInt(p.speed || p.velocity || 0),
     result: p.result,
-    location_x: p.x,
-    location_y: p.y,
-    hit_direction: p.direction,
-    // CRITICAL: Ensure this matches the column name in your Neon DB
-    count_before: p.countBefore || "0-0",
+    location_x: parseFloat(p.x),
+    location_y: parseFloat(p.y),
+    hit_direction: p.direction || null,
     timestamp: new Date(p.timestamp).toISOString(),
+    // CRITICAL: This MUST be the string "0-0" for the first pitch
+    count_before: p.countBefore || "0-0",
   }));
 
   const payload = {
@@ -315,11 +316,11 @@ async function endGame() {
       pitcherTeam: gameState.pitcherTeam,
       homeTeam: gameState.homeTeam,
       awayTeam: gameState.awayTeam,
-      homeScore: gameState.homeScore,
-      awayScore: gameState.awayScore,
-      timerSeconds: gameState.timerSeconds,
+      final_score_home: gameState.homeScore, // Matches your Neon column
+      final_score_away: gameState.awayScore, // Matches your Neon column
+      game_duration_seconds: gameState.timerSeconds, // Matches your Neon column
     },
-    pitches: mappedPitches, // Send the mapped pitches
+    pitches: mappedPitches,
   };
 
   const result = await WildmanAPI.saveGame(payload);
