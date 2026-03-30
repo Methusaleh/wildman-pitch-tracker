@@ -126,17 +126,17 @@ function processAndRenderStats(games, pitches) {
   const display = document.getElementById("stats-display");
   if (!display) return;
 
-  // Ensure we have a clean slate
   display.innerHTML = "";
 
-  // 1. CALCULATE ANALYTICS
-  // Filter pitches to only those belonging to the games currently in the filtered list
+  // 1. FILTER DATA
   const filteredGameIds = games.map((g) => g.id);
   const activePitches = pitches.filter((p) =>
-    filteredGameIds.includes(p.game_id),
+    filteredGameIds.includes(p.game_id || p.gameId),
   );
 
   const totalP = activePitches.length;
+
+  // 2. CORE ANALYTICS
   const strikes = activePitches.filter(
     (p) =>
       p.result &&
@@ -146,16 +146,39 @@ function processAndRenderStats(games, pitches) {
   ).length;
 
   const sPct = totalP > 0 ? ((strikes / totalP) * 100).toFixed(1) : 0;
+
   const maxV =
     activePitches.length > 0
       ? Math.max(...activePitches.map((p) => p.velocity || p.speed || 0))
       : 0;
 
-  // 2. FIRST PITCH STRIKE (FPS) LOGIC
+  // 3. ADVANCED METRICS (Whiff & Zone)
+  const swings = activePitches.filter(
+    (p) =>
+      p.result === "Strike Swinging" ||
+      p.result === "In-Play" ||
+      p.result === "Foul",
+  ).length;
+  const whiffs = activePitches.filter(
+    (p) => p.result === "Strike Swinging",
+  ).length;
+  const whiffPct = swings > 0 ? ((whiffs / swings) * 100).toFixed(1) : "0.0";
+
+  // Zone breakdown (Heart of the zone: 20-80% X, 15-85% Y)
+  const strikesInZone = activePitches.filter(
+    (p) =>
+      p.location_x > 20 &&
+      p.location_x < 80 &&
+      p.location_y > 15 &&
+      p.location_y < 85,
+  ).length;
+  const zonePct =
+    totalP > 0 ? ((strikesInZone / totalP) * 100).toFixed(0) : "0";
+
+  // 4. FIRST PITCH STRIKE (FPS)
   const firstPitches = activePitches.filter((p) => {
     const count = p.count_before || p.countBefore;
-    if (!count) return false;
-    return count.toString().replace(/\s+/g, "") === "0-0";
+    return count && count.toString().replace(/\s+/g, "") === "0-0";
   });
 
   const totalAtBats = firstPitches.length;
@@ -165,22 +188,35 @@ function processAndRenderStats(games, pitches) {
       p.result === "Foul" ||
       p.result === "In-Play",
   ).length;
-
-  // If no counts were found in the data, display "N/A" instead of "0%"
   const fpsPct =
     totalAtBats > 0 ? ((fpsStrikes / totalAtBats) * 100).toFixed(1) : "N/A";
 
-  // 3. PITCH TENDENCIES LOGIC
+  // 5. RENDER DASHBOARD
   const tendencies = calculateTendencies(activePitches);
 
-  // 4. RENDER HERO SECTION & TENDENCY TABLE
   let html = `
     <div class="stats-hero-container" style="padding: 10px;">
-        <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
-            <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2.5rem; color: var(--strike);">${sPct}%</span></div>
-            <div class="stat-card hero-card"><label>1ST PITCH STR%</label><span style="font-size: 2.5rem; color: #ffeb3b;">${fpsPct}%</span></div>
-            <div class="stat-card"><label>MAX VELO</label><span style="color: var(--accent); font-weight: 800;">${maxV} MPH</span></div>
+        <div class="hero-main-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <div class="stat-card hero-card"><label>STRIKE %</label><span style="font-size: 2rem; color: var(--strike);">${sPct}%</span></div>
+            <div class="stat-card hero-card"><label>WHIFF %</label><span style="font-size: 2rem; color: #e91e63;">${whiffPct}%</span></div>
+            <div class="stat-card"><label>1ST PITCH STR%</label><span style="color: #ffeb3b;">${fpsPct}%</span></div>
+            <div class="stat-card"><label>ZONE %</label><span>${zonePct}%</span></div>
+            <div class="stat-card"><label>MAX VELO</label><span style="color: var(--accent);">${maxV} MPH</span></div>
             <div class="stat-card"><label>TOTAL PITCHES</label><span>${totalP}</span></div>
+        </div>
+
+        <div class="heatmap-section" style="margin-bottom: 25px; text-align: center;">
+            <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #222; padding-bottom: 5px;">LOCATION HEATMAP</h3>
+            <div class="stats-heatmap-container" style="position:relative; width:220px; height:275px; background:#111; margin:0 auto; border:2px solid #333; border-radius:12px; overflow: hidden;">
+                <div class="inner-plate" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60%; height:70%; border:1px solid rgba(255,255,255,0.1); pointer-events:none;"></div>
+                ${activePitches
+                  .map(
+                    (p) => `
+                    <div class="ping" style="left:${p.location_x}%; top:${p.location_y}%; background:${getPitchColor(p.result)}; width:7px; height:7px; opacity:0.7; position:absolute; border-radius:50%; transform:translate(-50%,-50%);"></div>
+                `,
+                  )
+                  .join("")}
+            </div>
         </div>
 
         <div class="tendency-container" style="margin-bottom: 25px;">
@@ -192,7 +228,7 @@ function processAndRenderStats(games, pitches) {
                         <th style="padding: 10px;">QTY</th>
                         <th style="padding: 10px;">AVG</th>
                         <th style="padding: 10px;">MAX</th>
-                        <th style="padding: 10px;">STRIKE%</th>
+                        <th style="padding: 10px;">STR%</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -213,32 +249,29 @@ function processAndRenderStats(games, pitches) {
             </table>
         </div>
 
-        <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS (MAX 3)</h3>
+        <h3 style="font-size: 0.75rem; color: #555; letter-spacing: 1px; margin-bottom: 12px; border-bottom: 1px solid #222; padding-bottom: 5px;">RECENT SESSIONS</h3>
         <div class="mini-games-list">
   `;
 
-  // 5. RENDER RECENT GAMES
+  // 6. RECENT GAMES LIST
   const recentGames = games.slice(0, 3);
-
   if (recentGames.length === 0) {
-    html += `<p style="color:#444; text-align:center; font-style:italic; padding: 20px;">No games match these filters.</p>`;
+    html += `<p style="color:#444; text-align:center; font-style:italic; padding: 20px;">No games match filters.</p>`;
   } else {
     recentGames.forEach((game) => {
-      const gamePitches = pitches.filter((p) => p.game_id === game.id);
+      const gamePitches = pitches.filter(
+        (p) => (p.game_id || p.gameId) === game.id,
+      );
       const date = new Date(game.played_at).toLocaleDateString("en-US", {
         month: "numeric",
         day: "numeric",
       });
 
-      // Calculate K's for this specific game
-      let strikeouts = 0;
-      let sCount = 0;
+      // Strikeout logic
+      let strikeouts = 0,
+        sCount = 0;
       gamePitches.forEach((p) => {
-        if (
-          p.result === "Ball" ||
-          p.result === "In-Play" ||
-          p.result === "HBP"
-        ) {
+        if (["Ball", "In-Play", "HBP"].includes(p.result)) {
           sCount = 0;
         } else if (p.result.includes("Strike") || p.result === "Foul") {
           if (sCount === 2 && p.result !== "Foul") {
@@ -257,12 +290,11 @@ function processAndRenderStats(games, pitches) {
       const safeReport = btoa(unescape(encodeURIComponent(reportText)));
 
       html += `
-        <div class="mini-game-row" 
-             onclick="viewSingleGameStats('${game.id}')"
+        <div class="mini-game-row" onclick="viewSingleGameStats('${game.id}')"
              style="display:flex; justify-content:space-between; align-items:center; background:#111; padding:12px; margin-bottom:8px; border-radius:10px; border: 1px solid #222; cursor: pointer;">
             <div class="game-meta">
                 <h4 style="margin:0; font-size:0.85rem; color:#eee;">${game.away_team} @ ${game.home_team}</h4>
-                <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} PITCHES</p>
+                <p style="margin:0; font-size:0.65rem; color:#666; font-weight:bold;">${date} • ${strikeouts} K • ${gamePitches.length} P</p>
             </div>
             <button onclick="event.stopPropagation(); copyReport('${safeReport}')" 
                     style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 0.6rem; font-weight: 800;">
@@ -426,4 +458,19 @@ function calculateTendencies(pitches) {
       };
     })
     .filter((t) => t !== null);
+}
+
+function renderHeatmap(pitches) {
+  return `
+    <div class="stats-heatmap-container" style="position:relative; width:200px; height:250px; background:#222; margin:0 auto; border:2px solid #444; border-radius:8px;">
+        <div class="inner-plate" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:60%; height:70%; border:1px solid rgba(255,255,255,0.1);"></div>
+        ${pitches
+          .map(
+            (p) => `
+            <div class="ping" style="left:${p.location_x}%; top:${p.location_y}%; background:${getPitchColor(p.result)}; width:6px; height:6px; opacity:0.6;"></div>
+        `,
+          )
+          .join("")}
+    </div>
+  `;
 }

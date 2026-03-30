@@ -280,20 +280,35 @@ async function openStats() {
   const modal = document.getElementById("stats-modal");
   const display = document.getElementById("stats-display");
   modal.style.display = "flex";
-  display.innerHTML =
-    "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
 
-  try {
-    rawStatsData = await WildmanAPI.fetchStats(); // In api.js
-    if (rawStatsData.games?.length > 0) {
-      populateFilterDropdowns(); // In stats.js
-      applyFilters(); // In stats.js
-    } else {
-      display.innerHTML = "<p style='text-align:center;'>No data found.</p>";
-    }
-  } catch (err) {
+  // If a game is active, we can show Live Stats immediately
+  if (gameState.sessionPitches.length > 0) {
+    // We "fake" a game object so the stats engine accepts it
+    const liveGame = {
+      id: gameState.gameId,
+      pitcher_name: gameState.pitcherName,
+      away_team: gameState.awayTeam,
+      home_team: gameState.homeTeam,
+      played_at: new Date().toISOString(),
+    };
+
+    // Render using local session pitches + any cloud pitches we already have
+    processAndRenderStats(
+      [liveGame],
+      [...rawStatsData.pitches, ...gameState.sessionPitches],
+      true,
+    );
+  } else {
     display.innerHTML =
-      "<p style='text-align:center; color:red;'>Sync Error</p>";
+      "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
+    try {
+      rawStatsData = await WildmanAPI.fetchStats();
+      populateFilterDropdowns();
+      applyFilters();
+    } catch (err) {
+      display.innerHTML =
+        "<p style='text-align:center; color:red;'>Sync Error</p>";
+    }
   }
 }
 
