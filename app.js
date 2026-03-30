@@ -291,7 +291,7 @@ async function openStats() {
     liveGame = {
       id: gameState.gameId,
       pitcher_name: gameState.pitcherName,
-      pitcherName: gameState.pitcherName, // Add both naming styles for safety
+      pitcherName: gameState.pitcherName,
       away_team: gameState.awayTeam,
       home_team: gameState.homeTeam,
       played_at: new Date().toISOString(),
@@ -301,13 +301,19 @@ async function openStats() {
       final_score_away: gameState.awayScore,
     };
 
-    // FORCE local data into the global rawStatsData pool immediately
+    // Prepare the global data pool with the live info immediately
     rawStatsData.games = [liveGame];
     rawStatsData.pitches = [...gameState.sessionPitches];
 
-    // Show the local stats right now
+    // Build the dropdowns
     populateFilterDropdowns();
-    processAndRenderStats([liveGame], gameState.sessionPitches);
+
+    // Force the dropdown to select the Live Session
+    const pSelect = document.getElementById("filter-pitcher");
+    if (pSelect) pSelect.value = "LIVE_SESSION";
+
+    // Trigger the render via the filter logic
+    applyFilters();
 
     // Live Badge logic
     if (!document.getElementById("live-session-badge")) {
@@ -321,11 +327,10 @@ async function openStats() {
       "<p style='text-align:center; width:100%;'>Syncing Cloud...</p>";
   }
 
-  // 2. NOW try to bring in the cloud data in the background
+  // 2. Background cloud sync
   try {
     const cloudData = await WildmanAPI.fetchStats();
     if (cloudData && cloudData.games) {
-      // Add cloud games to our existing live game(s)
       rawStatsData.games = isLive
         ? [liveGame, ...cloudData.games]
         : cloudData.games;
@@ -333,15 +338,11 @@ async function openStats() {
         ? [...gameState.sessionPitches, ...cloudData.pitches]
         : cloudData.pitches;
 
-      // Re-populate filters so history appears in the dropdowns
       populateFilterDropdowns();
-
-      // If NOT mid-game, show the default cloud history
       if (!isLive) applyFilters();
     }
   } catch (err) {
     console.error("Cloud Fetch Failed:", err);
-    // No alert needed, we already showed the live data or an error message
   }
 }
 

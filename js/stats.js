@@ -72,7 +72,8 @@ function populateFilterDropdowns() {
   // 1. ADD "LIVE SESSION" OPTION IF ACTIVE
   let pOptions = `<option value="all">All Pitchers</option>`;
   if (gameState.sessionPitches.length > 0) {
-    pOptions += `<option value="LIVE_SESSION">🔴 LIVE SESSION (${gameState.pitcherName})</option>`;
+    // Add 'selected' so it's the active filter when the modal opens
+    pOptions += `<option value="LIVE_SESSION" selected>🔴 LIVE SESSION (${gameState.pitcherName})</option>`;
   }
 
   pSelect.innerHTML =
@@ -155,21 +156,26 @@ function applyFilters() {
 }
 
 function processAndRenderStats(games, pitches) {
+  const display = document.getElementById("stats-display");
+  if (!display) return;
+
   if (!games || games.length === 0) {
     display.innerHTML =
       "<p style='text-align:center; padding:40px; color:#666;'>No game data found for this selection.</p>";
     return;
   }
-  const display = document.getElementById("stats-display");
-  if (!display) return;
 
   display.innerHTML = "";
 
-  // 1. FILTER DATA
-  const filteredGameIds = games.map((g) => g.id);
-  const activePitches = pitches.filter((p) =>
-    filteredGameIds.includes(p.game_id || p.gameId),
+  // 1. FILTER DATA - Force everything to Strings to ensure matches
+  const filteredGameIds = games.map((g) =>
+    (g.id || g.gameId || g.game_id).toString(),
   );
+
+  const activePitches = pitches.filter((p) => {
+    const pId = (p.game_id || p.gameId || "").toString();
+    return filteredGameIds.includes(pId);
+  });
 
   const totalP = activePitches.length;
 
